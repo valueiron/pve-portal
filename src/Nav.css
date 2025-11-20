@@ -62,7 +62,7 @@
 }
 
 .nav-toggle:hover {
-    background-color: #FFD700;
+    background-color: #6b6b6b;
 }
 
 /* Navigation List */
@@ -91,7 +91,7 @@
 }
 
 .nav-link:hover {
-    background-color: #
+    background-color: #FFD700;
 }
 
 .nav-icon {
