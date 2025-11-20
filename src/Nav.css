@@ -2,8 +2,8 @@
 .nav-sidebar {
     position: fixed;
     left: 0;
-    top: 0;
-    height: 100vh;
+    top: 80px;
+    height: calc(100vh - 80px);
     width: 250px;
     background-color: #808080;
     color: #000000;
@@ -22,7 +22,7 @@
 .nav-mobile-toggle {
     display: none;
     position: fixed;
-    top: 15px;
+    top: 85px;
     left: 15px;
     z-index: 1001;
     background-color: #808080;
@@ -127,6 +127,8 @@
 @media (max-width: 768px) {
     .nav-sidebar {
         width: 250px;
+        top: 70px;
+        height: calc(100vh - 70px);
         transform: translateX(-100%);
     }
 
@@ -140,6 +142,7 @@
 
     .nav-mobile-toggle {
         display: block;
+        top: 75px;
     }
 
     .nav-mobile-backdrop {
