@@ -1,10 +1,10 @@
 import './App.css'
-import Card from './Card'
+import Nav from './NavCard'
 
 function App() {
 
   return (
-<Card/>
+<Nav/>
   )
 }
 
