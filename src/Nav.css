@@ -1,0 +1,164 @@
+/* Navigation Sidebar */
+.nav-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 250px;
+    background-color: #808080;
+    color: #000000;
+    transition: width 0.3s ease, transform 0.3s ease;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.nav-sidebar.nav-collapsed {
+    width: 70px;
+}
+
+/* Mobile Navigation */
+.nav-mobile-toggle {
+    display: none;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1001;
+    background-color: #808080;
+    color: #000000;
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.5rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.nav-mobile-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+/* Navigation Toggle Button */
+.nav-toggle {
+    background-color: #6b6b6b;
+    color: #000000;
+    border: none;
+    padding: 15px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #6b6b6b;
+}
+
+.nav-toggle:hover {
+    background-color: #6b6b6b;
+}
+
+/* Navigation List */
+.nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.nav-item {
+    margin: 0;
+    padding: 0;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: #000000;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #6b6b6b;
+    gap: 15px;
+}
+
+.nav-link:hover {
+    background-color: #6b6b6b;
+}
+
+.nav-icon {
+    font-size: 1.5rem;
+    min-width: 24px;
+    flex-shrink: 0;
+}
+
+.nav-text {
+    font-size: 1rem;
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+.nav-collapsed .nav-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+.nav-collapsed .nav-link {
+    justify-content: center;
+    padding: 15px;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .nav-sidebar {
+        width: 250px;
+        transform: translateX(-100%);
+    }
+
+    .nav-sidebar.nav-mobile-open {
+        transform: translateX(0);
+    }
+
+    .nav-sidebar.nav-collapsed {
+        width: 250px;
+    }
+
+    .nav-mobile-toggle {
+        display: block;
+    }
+
+    .nav-mobile-backdrop {
+        display: block;
+    }
+
+    .nav-toggle {
+        display: none;
+    }
+
+    .nav-collapsed .nav-text {
+        opacity: 1;
+        width: auto;
+        overflow: visible;
+    }
+
+    .nav-collapsed .nav-link {
+        justify-content: flex-start;
+        padding: 15px 20px;
+    }
+}
+
+/* Ensure body doesn't scroll when mobile nav is open */
+body.nav-mobile-open {
+    overflow: hidden;
+}
+
