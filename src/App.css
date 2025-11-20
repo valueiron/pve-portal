@@ -15,9 +15,10 @@
 .app-main {
   flex: 1;
   margin-left: 250px;
+  margin-top: 80px;
   transition: margin-left 0.3s ease;
   overflow-y: auto;
-  height: 100vh;
+  height: calc(100vh - 80px);
 }
 
 .app-content {
@@ -34,6 +35,8 @@
 @media (max-width: 768px) {
   .app-main {
     margin-left: 0;
+    margin-top: 70px;
+    height: calc(100vh - 70px);
   }
 
   .nav-collapsed ~ .app-main {
