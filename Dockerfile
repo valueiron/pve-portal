@@ -21,11 +21,16 @@ RUN apk add --no-cache gettext
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Create entrypoint script to generate config.js from template
+# If API_BASE_URL is not set, config.js will use auto-detection
 RUN echo '#!/bin/sh' > /entrypoint.sh && \
     echo 'set -e' >> /entrypoint.sh && \
-    echo 'export API_BASE_URL=${API_BASE_URL:-http://localhost:5000}' >> /entrypoint.sh && \
-    echo 'envsubst '"'"'$API_BASE_URL'"'"' < /usr/share/nginx/html/config.js.template > /usr/share/nginx/html/config.js' >> /entrypoint.sh && \
-    echo 'rm /usr/share/nginx/html/config.js.template' >> /entrypoint.sh && \
+    echo 'if [ -n "$API_BASE_URL" ]; then' >> /entrypoint.sh && \
+    echo '  envsubst '"'"'$API_BASE_URL'"'"' < /usr/share/nginx/html/config.js.template > /usr/share/nginx/html/config.js' >> /entrypoint.sh && \
+    echo 'else' >> /entrypoint.sh && \
+    echo '  # No API_BASE_URL set, use auto-detection - create empty config.js' >> /entrypoint.sh && \
+    echo '  echo "// Auto-detection enabled - API URL will be determined from current page URL" > /usr/share/nginx/html/config.js' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'rm -f /usr/share/nginx/html/config.js.template' >> /entrypoint.sh && \
     echo 'exec nginx -g "daemon off;"' >> /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
