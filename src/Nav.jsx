@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { 
   FaServer, 
   FaHdd, 
@@ -13,6 +14,7 @@ import "./Nav.css";
 let Nav = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const location = useLocation();
 
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed);
@@ -35,12 +37,17 @@ let Nav = () => {
         };
     }, [isMobileOpen]);
 
+    // Close mobile menu when route changes
+    useEffect(() => {
+        setIsMobileOpen(false);
+    }, [location.pathname]);
+
     const navItems = [
-        { name: "Virtual Machines", icon: FaServer },
-        { name: "Storage", icon: FaHdd },
-        { name: "Networking", icon: FaNetworkWired },
-        { name: "Firewall", icon: FaShieldAlt },
-        { name: "Services", icon: FaCog },
+        { name: "Virtual Machines", icon: FaServer, path: "/virtual-machines" },
+        { name: "Storage", icon: FaHdd, path: "/storage" },
+        { name: "Networking", icon: FaNetworkWired, path: "/networking" },
+        { name: "Firewall", icon: FaShieldAlt, path: "/firewall" },
+        { name: "Services", icon: FaCog, path: "/services" },
     ];
 
     return (
@@ -76,15 +83,16 @@ let Nav = () => {
                 <ul className="nav-list">
                     {navItems.map((item, index) => {
                         const Icon = item.icon;
+                        const isActive = location.pathname === item.path;
                         return (
                             <li key={index} className="nav-item">
-                                <a href="#" className="nav-link" onClick={(e) => {
-                                    e.preventDefault();
-                                    setIsMobileOpen(false);
-                                }}>
+                                <Link 
+                                    to={item.path} 
+                                    className={`nav-link ${isActive ? 'nav-link-active' : ''}`}
+                                >
                                     <Icon className="nav-icon" />
                                     {!isCollapsed && <span className="nav-text">{item.name}</span>}
-                                </a>
+                                </Link>
                             </li>
                         );
                     })}
