@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 import "./Header.css";
 
@@ -31,7 +32,7 @@ const Header = () => {
         <header className="header">
             <div className="header-content">
                 {/* Logo area */}
-                <div className="header-logo">
+                <Link to="/" className="header-logo">
                     <img 
                         src="/logo.png" 
                         alt="Logo" 
@@ -45,7 +46,7 @@ const Header = () => {
                     <div className="header-logo-placeholder" style={{ display: 'none' }}>
                         Logo
                     </div>
-                </div>
+                </Link>
 
                 {/* Account dropdown */}
                 <div className="header-account" ref={dropdownRef}>
