@@ -1,0 +1,5 @@
+// Runtime API configuration
+// This file is generated from config.js.template at container startup
+// Set API_BASE_URL environment variable to override the default
+window.__API_BASE_URL__ = '${API_BASE_URL}';
+
