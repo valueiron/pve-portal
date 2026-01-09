@@ -5,7 +5,10 @@ WORKDIR /app
 COPY package*.json ./
 
 RUN npm install
+
+# Copy source code first
 COPY . .
+
 RUN npm run build
 
 # Copy config template to build output
@@ -14,8 +17,11 @@ COPY public/config.js.template /app/dist/config.js.template
 # Production Stage
 FROM nginx:stable-alpine AS production
 
-# Install envsubst for environment variable substitution
-RUN apk add --no-cache gettext
+# Install envsubst for environment variable substitution and curl for verification
+RUN apk add --no-cache gettext curl
+
+# Copy nginx configuration for SPA routing
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built files
 COPY --from=build /app/dist /usr/share/nginx/html

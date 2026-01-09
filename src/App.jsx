@@ -1,5 +1,5 @@
 import './App.css'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Nav from './Nav'
 import Header from './Header'
 import Home from './pages/Home'
@@ -10,6 +10,7 @@ import Firewall from './pages/Firewall'
 import Services from './pages/Services'
 
 function App() {
+  // Regular pages with Header/Nav
   return (
     <div className="app-container">
       <Header />
@@ -27,7 +28,7 @@ function App() {
         </div>
       </main>
     </div>
-  )
+  );
 }
 
 export default App

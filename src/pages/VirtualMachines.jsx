@@ -9,6 +9,7 @@ const VirtualMachines = () => {
     const [error, setError] = useState(null);
     const [actionLoading, setActionLoading] = useState({});
     const [searchQuery, setSearchQuery] = useState("");
+    const [typeFilter, setTypeFilter] = useState("all"); // "all", "proxmox", "azure"
 
     useEffect(() => {
         const loadVMs = async () => {
@@ -61,6 +62,7 @@ const VirtualMachines = () => {
         }
     };
 
+
     const formatBytes = (bytes) => {
         if (!bytes || bytes === 0) return "0 B";
         const k = 1024;
@@ -97,27 +99,38 @@ const VirtualMachines = () => {
         }
     };
 
-    // Filter VMs based on search query
+    // Filter VMs based on search query and type filter
     const filteredVMs = useMemo(() => {
-        if (!searchQuery.trim()) {
-            return vms;
+        let filtered = vms;
+
+        // Filter by type
+        if (typeFilter !== "all") {
+            filtered = filtered.filter((vm) => {
+                const vmType = vm.type || (typeof vm.vmid === 'string' && vm.vmid.startsWith('azure-') ? 'azure' : 'proxmox');
+                return vmType === typeFilter;
+            });
         }
 
-        const query = searchQuery.toLowerCase().trim();
-        return vms.filter((vm) => {
-            const name = (vm.name || `VM ${vm.vmid}`).toLowerCase();
-            const vmid = vm.vmid.toString().toLowerCase();
-            const node = (vm.node || "").toLowerCase();
-            const status = (vm.status || "").toLowerCase();
+        // Filter by search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter((vm) => {
+                const name = (vm.name || `VM ${vm.vmid}`).toLowerCase();
+                const vmid = vm.vmid.toString().toLowerCase();
+                const node = (vm.node || "").toLowerCase();
+                const status = (vm.status || "").toLowerCase();
 
-            return (
-                name.includes(query) ||
-                vmid.includes(query) ||
-                node.includes(query) ||
-                status.includes(query)
-            );
-        });
-    }, [vms, searchQuery]);
+                return (
+                    name.includes(query) ||
+                    vmid.includes(query) ||
+                    node.includes(query) ||
+                    status.includes(query)
+                );
+            });
+        }
+
+        return filtered;
+    }, [vms, searchQuery, typeFilter]);
 
     return (
         <div className="page-container">
@@ -126,53 +139,112 @@ const VirtualMachines = () => {
                 Manage and monitor your virtual machines here.
             </p>
             
-            {/* Search Bar */}
+            {/* Filters and Search Bar */}
             {!loading && !error && vms.length > 0 && (
                 <div style={{ 
-                    marginBottom: "1.5rem",
-                    maxWidth: "500px"
+                    marginBottom: "1.5rem"
                 }}>
-                    <div style={{
-                        position: "relative",
+                    <div style={{ 
                         display: "flex",
-                        alignItems: "center"
+                        gap: "1rem",
+                        flexWrap: "wrap",
+                        alignItems: "flex-start",
+                        marginBottom: "0.5rem"
                     }}>
-                        <FaSearch 
-                            style={{
-                                position: "absolute",
-                                left: "1rem",
-                                color: "#666",
-                                pointerEvents: "none"
-                            }}
-                        />
-                        <input
-                            type="text"
-                            placeholder="Search VMs by name, ID, node, or status..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            style={{
-                                width: "100%",
-                                padding: "0.75rem 1rem 0.75rem 2.5rem",
-                                border: "1px solid #6b6b6b",
-                                borderRadius: "8px",
-                                fontSize: "1rem",
-                                backgroundColor: "#fff",
-                                color: "#000",
-                                outline: "none",
-                                transition: "border-color 0.2s"
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = "#4caf50"}
-                            onBlur={(e) => e.target.style.borderColor = "#6b6b6b"}
-                        />
+                        {/* Type Filter */}
+                        <div style={{ minWidth: "150px" }}>
+                            <label style={{ 
+                                display: "block", 
+                                marginBottom: "0.5rem", 
+                                color: "rgba(255, 255, 255, 0.87)", 
+                                fontSize: "0.9rem",
+                                fontWeight: "500"
+                            }}>
+                                Filter by Type:
+                            </label>
+                            <select
+                                value={typeFilter}
+                                onChange={(e) => setTypeFilter(e.target.value)}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.75rem 1rem",
+                                    border: "1px solid #6b6b6b",
+                                    borderRadius: "8px",
+                                    fontSize: "1rem",
+                                    backgroundColor: "#fff",
+                                    color: "#000",
+                                    outline: "none",
+                                    cursor: "pointer",
+                                    transition: "border-color 0.2s"
+                                }}
+                                onFocus={(e) => e.target.style.borderColor = "#4caf50"}
+                                onBlur={(e) => e.target.style.borderColor = "#6b6b6b"}
+                            >
+                                <option value="all">All VMs</option>
+                                <option value="proxmox">Proxmox</option>
+                                <option value="azure">Azure</option>
+                            </select>
+                        </div>
+
+                        {/* Search Bar */}
+                        <div style={{ 
+                            flex: 1,
+                            maxWidth: "500px",
+                            minWidth: "250px"
+                        }}>
+                            <label style={{ 
+                                display: "block", 
+                                marginBottom: "0.5rem", 
+                                color: "rgba(255, 255, 255, 0.87)", 
+                                fontSize: "0.9rem",
+                                fontWeight: "500"
+                            }}>
+                                Search:
+                            </label>
+                            <div style={{
+                                position: "relative",
+                                display: "flex",
+                                alignItems: "center"
+                            }}>
+                                <FaSearch 
+                                    style={{
+                                        position: "absolute",
+                                        left: "1rem",
+                                        color: "#666",
+                                        pointerEvents: "none"
+                                    }}
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Search VMs by name, ID, node, or status..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    style={{
+                                        width: "100%",
+                                        padding: "0.75rem 1rem 0.75rem 2.5rem",
+                                        border: "1px solid #6b6b6b",
+                                        borderRadius: "8px",
+                                        fontSize: "1rem",
+                                        backgroundColor: "#fff",
+                                        color: "#000",
+                                        outline: "none",
+                                        transition: "border-color 0.2s"
+                                    }}
+                                    onFocus={(e) => e.target.style.borderColor = "#4caf50"}
+                                    onBlur={(e) => e.target.style.borderColor = "#6b6b6b"}
+                                />
+                            </div>
+                        </div>
                     </div>
-                    {searchQuery && (
-                        <p style={{ 
-                            marginTop: "0.5rem", 
-                            color: "#666", 
-                            fontSize: "0.9rem" 
+                    
+                    {(searchQuery || typeFilter !== "all") && (
+                        <div style={{ 
+                            color: "rgba(255, 255, 255, 0.7)", 
+                            fontSize: "0.9rem",
+                            marginTop: "0.5rem"
                         }}>
                             Showing {filteredVMs.length} of {vms.length} virtual machine{filteredVMs.length !== 1 ? 's' : ''}
-                        </p>
+                        </div>
                     )}
                 </div>
             )}
@@ -205,78 +277,96 @@ const VirtualMachines = () => {
 
                 {!loading && !error && filteredVMs.length > 0 && (
                     <>
-                        {filteredVMs.map((vm) => (
-                            <div key={`${vm.node}-${vm.vmid}`} className="page-card">
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-                                    <div>
-                                        <h2 style={{ marginBottom: "0.5rem" }}>
-                                            {vm.name || `VM ${vm.vmid}`}
-                                        </h2>
-                                        <p style={{ margin: "0.25rem 0", color: "#333" }}>
-                                            <strong>VM ID:</strong> {vm.vmid}
-                                        </p>
-                                        <p style={{ margin: "0.25rem 0", color: "#333" }}>
-                                            <strong>Node:</strong> {vm.node}
-                                        </p>
-                                    </div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                        <div style={{ 
-                                            padding: "0.5rem 1rem", 
-                                            borderRadius: "4px", 
-                                            backgroundColor: getStatusColor(vm.status),
-                                            color: "#fff",
-                                            fontWeight: "bold",
-                                            textTransform: "uppercase"
-                                        }}>
-                                            {vm.status}
-                                        </div>
-                                        <div style={{ display: "flex", gap: "0.5rem" }}>
-                                            {vm.status === "stopped" ? (
-                                                <button
-                                                    onClick={() => handleStartVM(vm.vmid)}
-                                                    disabled={actionLoading[vm.vmid]}
+                        {filteredVMs.map((vm) => {
+                            const vmType = vm.type || (typeof vm.vmid === 'string' && vm.vmid.startsWith('azure-') ? 'azure' : 'proxmox');
+                            const isProxmox = vmType === 'proxmox';
+                            const isAzure = vmType === 'azure';
+                            
+                            return (
+                                <div key={`${vmType}-${vm.node}-${vm.vmid}`} className="page-card">
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                                        <div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                                                <h2 style={{ margin: 0 }}>
+                                                    {vm.name || `VM ${vm.vmid}`}
+                                                </h2>
+                                                <img 
+                                                    src={isAzure ? "/Azure.png" : "/Proxmox.png"}
+                                                    alt={vmType}
                                                     style={{
-                                                        padding: "0.5rem",
-                                                        border: "none",
-                                                        borderRadius: "4px",
-                                                        backgroundColor: "#4caf50",
-                                                        color: "#fff",
-                                                        cursor: actionLoading[vm.vmid] ? "not-allowed" : "pointer",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent: "center",
-                                                        opacity: actionLoading[vm.vmid] ? 0.6 : 1,
-                                                        transition: "opacity 0.2s"
+                                                        height: "24px",
+                                                        width: "auto",
+                                                        objectFit: "contain"
                                                     }}
-                                                    title="Start VM"
-                                                >
-                                                    <FaPlay size={16} />
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleShutdownVM(vm.vmid)}
-                                                    disabled={actionLoading[vm.vmid]}
-                                                    style={{
-                                                        padding: "0.5rem",
-                                                        border: "none",
-                                                        borderRadius: "4px",
-                                                        backgroundColor: "#f44336",
-                                                        color: "#fff",
-                                                        cursor: actionLoading[vm.vmid] ? "not-allowed" : "pointer",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent: "center",
-                                                        opacity: actionLoading[vm.vmid] ? 0.6 : 1,
-                                                        transition: "opacity 0.2s"
-                                                    }}
-                                                    title="Shutdown VM"
-                                                >
-                                                    <FaPowerOff size={16} />
-                                                </button>
-                                            )}
+                                                />
+                                            </div>
+                                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                                <strong>VM ID:</strong> {vm.vmid}
+                                            </p>
+                                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                                <strong>{isAzure ? "Resource Group" : "Node"}:</strong> {vm.node}
+                                            </p>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                            <div style={{ 
+                                                padding: "0.5rem 1rem", 
+                                                borderRadius: "4px", 
+                                                backgroundColor: getStatusColor(vm.status),
+                                                color: "#fff",
+                                                fontWeight: "bold",
+                                                textTransform: "uppercase"
+                                            }}>
+                                                {vm.status}
+                                            </div>
+                                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                                                {vm.status === "stopped" ? (
+                                                    <button
+                                                        onClick={() => handleStartVM(vm.vmid)}
+                                                        disabled={actionLoading[vm.vmid]}
+                                                        style={{
+                                                            padding: "0.5rem",
+                                                            border: "none",
+                                                            borderRadius: "4px",
+                                                            backgroundColor: "#4caf50",
+                                                            color: "#fff",
+                                                            cursor: actionLoading[vm.vmid] ? "not-allowed" : "pointer",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            opacity: actionLoading[vm.vmid] ? 0.6 : 1,
+                                                            transition: "opacity 0.2s"
+                                                        }}
+                                                        title="Start VM"
+                                                    >
+                                                        <FaPlay size={16} />
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleShutdownVM(vm.vmid)}
+                                                            disabled={actionLoading[vm.vmid]}
+                                                            style={{
+                                                                padding: "0.5rem",
+                                                                border: "none",
+                                                                borderRadius: "4px",
+                                                                backgroundColor: "#f44336",
+                                                                color: "#fff",
+                                                                cursor: actionLoading[vm.vmid] ? "not-allowed" : "pointer",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                                opacity: actionLoading[vm.vmid] ? 0.6 : 1,
+                                                                transition: "opacity 0.2s"
+                                                            }}
+                                                            title="Shutdown VM"
+                                                        >
+                                                            <FaPowerOff size={16} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
                                 
                                 <div style={{ 
                                     display: "grid", 
@@ -285,30 +375,31 @@ const VirtualMachines = () => {
                                     marginTop: "1rem"
                                 }}>
                                     <div>
-                                        <p style={{ margin: "0.25rem 0", color: "#333" }}>
+                                        <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
                                             <strong>CPU:</strong> {(vm.cpu * 100).toFixed(1)}%
                                         </p>
                                     </div>
                                     <div>
-                                        <p style={{ margin: "0.25rem 0", color: "#333" }}>
+                                        <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
                                             <strong>Memory:</strong> {formatBytes(vm.mem)} / {formatBytes(vm.maxmem)}
                                         </p>
                                     </div>
                                     <div>
-                                        <p style={{ margin: "0.25rem 0", color: "#333" }}>
+                                        <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
                                             <strong>Disk:</strong> {formatBytes(vm.disk)} / {formatBytes(vm.maxdisk)}
                                         </p>
                                     </div>
                                     {vm.uptime > 0 && (
                                         <div>
-                                            <p style={{ margin: "0.25rem 0", color: "#333" }}>
+                                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
                                                 <strong>Uptime:</strong> {formatUptime(vm.uptime)}
                                             </p>
                                         </div>
                                     )}
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </>
                 )}
             </div>
