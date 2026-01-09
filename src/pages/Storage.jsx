@@ -7,7 +7,8 @@ const Storage = () => {
     const [storage, setStorage] = useState({
         storage_accounts: [],
         containers: [],
-        buckets: []
+        buckets: [],
+        storages: []
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -50,6 +51,9 @@ const Storage = () => {
         // AWS resources
         storage.buckets.forEach(r => resources.push({ ...r, displayName: r.name || r.id }));
         
+        // Proxmox resources
+        storage.storages.forEach(r => resources.push({ ...r, displayName: r.name || r.id }));
+        
         return resources;
     }, [storage]);
 
@@ -73,7 +77,7 @@ const Storage = () => {
             filtered = filtered.filter((resource) => {
                 const name = (resource.displayName || resource.id || "").toLowerCase();
                 const id = (resource.id || "").toLowerCase();
-                const location = (resource.location || resource.region || resource.resource_group || "").toLowerCase();
+                const location = (resource.location || resource.region || resource.resource_group || resource.node || "").toLowerCase();
                 
                 return (
                     name.includes(query) ||
@@ -98,7 +102,8 @@ const Storage = () => {
         const labels = {
             'storage_account': 'Storage Account',
             'blob_container': 'Blob Container',
-            's3_bucket': 'S3 Bucket'
+            's3_bucket': 'S3 Bucket',
+            'proxmox_storage': 'Proxmox Storage'
         };
         return labels[resourceType] || resourceType;
     };
@@ -106,10 +111,12 @@ const Storage = () => {
     const renderResourceCard = (resource) => {
         const isAzure = resource.type === 'azure';
         const isAWS = resource.type === 'aws';
+        const isProxmox = resource.type === 'proxmox';
         
         // Determine icon source
         let iconSrc = "/Azure.png";
         if (isAWS) iconSrc = "/AWS.png";
+        if (isProxmox) iconSrc = "/Proxmox.png";
 
         return (
             <div key={`${resource.type}-${resource.resource_type}-${resource.id}`} className="page-card">
@@ -148,6 +155,11 @@ const Storage = () => {
                         {resource.resource_group && (
                             <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
                                 <strong>Resource Group:</strong> {resource.resource_group}
+                            </p>
+                        )}
+                        {resource.node && isProxmox && (
+                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                <strong>Node:</strong> {resource.node}
                             </p>
                         )}
                     </div>
@@ -239,6 +251,61 @@ const Storage = () => {
                             )}
                         </>
                     )}
+                    
+                    {/* Proxmox Storage specific fields */}
+                    {resource.resource_type === 'proxmox_storage' && (
+                        <>
+                            {resource.storage_type && (
+                                <div>
+                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                        <strong>Storage Type:</strong> {resource.storage_type}
+                                    </p>
+                                </div>
+                            )}
+                            {resource.content && (
+                                <div>
+                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                        <strong>Content:</strong> {resource.content}
+                                    </p>
+                                </div>
+                            )}
+                            {resource.total_bytes !== undefined && (
+                                <div>
+                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                        <strong>Total:</strong> {formatBytes(resource.total_bytes)}
+                                    </p>
+                                </div>
+                            )}
+                            {resource.used_bytes !== undefined && (
+                                <div>
+                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                        <strong>Used:</strong> {formatBytes(resource.used_bytes)}
+                                    </p>
+                                </div>
+                            )}
+                            {resource.avail_bytes !== undefined && (
+                                <div>
+                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                        <strong>Available:</strong> {formatBytes(resource.avail_bytes)}
+                                    </p>
+                                </div>
+                            )}
+                            {resource.active !== undefined && (
+                                <div>
+                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                        <strong>Active:</strong> {resource.active ? 'Yes' : 'No'}
+                                    </p>
+                                </div>
+                            )}
+                            {resource.enabled !== undefined && (
+                                <div>
+                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                        <strong>Enabled:</strong> {resource.enabled ? 'Yes' : 'No'}
+                                    </p>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
         );
@@ -248,7 +315,7 @@ const Storage = () => {
         <div className="page-container">
             <h1 className="page-title">Storage</h1>
             <p className="page-description">
-                View and manage your storage resources from Azure and AWS.
+                View and manage your storage resources from Proxmox, Azure, and AWS.
             </p>
             
             {/* Filters and Search Bar */}
@@ -293,6 +360,7 @@ const Storage = () => {
                                 onBlur={(e) => e.target.style.borderColor = "#6b6b6b"}
                             >
                                 <option value="all">All Providers</option>
+                                <option value="proxmox">Proxmox</option>
                                 <option value="azure">Azure</option>
                                 <option value="aws">AWS</option>
                             </select>
@@ -328,6 +396,7 @@ const Storage = () => {
                                 onBlur={(e) => e.target.style.borderColor = "#6b6b6b"}
                             >
                                 <option value="all">All Resources</option>
+                                <option value="proxmox_storage">Proxmox Storage</option>
                                 <option value="storage_account">Storage Accounts (Azure)</option>
                                 <option value="blob_container">Blob Containers (Azure)</option>
                                 <option value="s3_bucket">S3 Buckets (AWS)</option>
