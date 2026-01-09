@@ -3,12 +3,25 @@
  * Handles API calls to the backend for VM-related operations
  */
 import { API_ENDPOINTS } from '../config/api';
+import { getCachedData, setCachedData, clearCache } from '../utils/cache';
 
 /**
  * Fetch all VMs from the backend
+ * @param {boolean} forceRefresh - If true, bypass cache and fetch fresh data
  * @returns {Promise<Array>} Array of VM objects
  */
-export const fetchVMs = async () => {
+export const fetchVMs = async (forceRefresh = false) => {
+  // Check cache first unless force refresh is requested
+  if (!forceRefresh) {
+    const cachedData = getCachedData(API_ENDPOINTS.VMS);
+    if (cachedData !== null) {
+      return cachedData;
+    }
+  } else {
+    // Clear cache if forcing refresh
+    clearCache(API_ENDPOINTS.VMS);
+  }
+
   try {
     const response = await fetch(API_ENDPOINTS.VMS, {
       method: 'GET',
@@ -23,7 +36,12 @@ export const fetchVMs = async () => {
     }
 
     const data = await response.json();
-    return data.vms || [];
+    const vms = data.vms || [];
+    
+    // Store in cache
+    setCachedData(API_ENDPOINTS.VMS, vms);
+    
+    return vms;
   } catch (error) {
     console.error('Error fetching VMs:', error);
     throw error;

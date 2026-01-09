@@ -49,6 +49,15 @@
     line-height: 1.6;
 }
 
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 @media (max-width: 768px) {
     .page-title {
         font-size: 2rem;

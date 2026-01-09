@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaSyncAlt } from "react-icons/fa";
 import "./Page.css";
 import { fetchStorage } from "../services/storageService";
 
@@ -14,23 +14,29 @@ const Storage = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [typeFilter, setTypeFilter] = useState("all"); // "all", "azure", "aws"
     const [resourceTypeFilter, setResourceTypeFilter] = useState("all"); // "all", "storage_account", "blob_container", "s3_bucket"
+    const [refreshing, setRefreshing] = useState(false);
+
+    const loadStorage = async (forceRefresh = false) => {
+        try {
+            if (forceRefresh) {
+                setRefreshing(true);
+            } else {
+                setLoading(true);
+            }
+            setError(null);
+            const storageData = await fetchStorage(forceRefresh);
+            setStorage(storageData);
+        } catch (err) {
+            setError(err.message || "Failed to load storage resources");
+            console.error("Error loading storage:", err);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
-        const loadStorage = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                const storageData = await fetchStorage();
-                setStorage(storageData);
-            } catch (err) {
-                setError(err.message || "Failed to load storage resources");
-                console.error("Error loading storage:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadStorage();
+        loadStorage(false);
     }, []);
 
     // Flatten all resources into a single array for easier filtering
@@ -376,6 +382,51 @@ const Storage = () => {
                                     onBlur={(e) => e.target.style.borderColor = "#6b6b6b"}
                                 />
                             </div>
+                        </div>
+
+                        {/* Refresh Button */}
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                            <label style={{ 
+                                display: "block", 
+                                marginBottom: "0.5rem", 
+                                color: "rgba(255, 255, 255, 0.87)", 
+                                fontSize: "0.9rem",
+                                fontWeight: "500",
+                                height: "1.5rem"
+                            }}>
+                                &nbsp;
+                            </label>
+                            <button
+                                onClick={() => loadStorage(true)}
+                                disabled={refreshing || loading}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.75rem 1rem",
+                                    border: "1px solid transparent",
+                                    borderRadius: "8px",
+                                    backgroundColor: refreshing || loading ? "#6b6b6b" : "#4caf50",
+                                    color: "#fff",
+                                    cursor: refreshing || loading ? "not-allowed" : "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "0.5rem",
+                                    fontSize: "1rem",
+                                    fontWeight: "500",
+                                    transition: "background-color 0.2s, opacity 0.2s",
+                                    opacity: refreshing || loading ? 0.6 : 1,
+                                    lineHeight: "1",
+                                    boxSizing: "border-box",
+                                    minHeight: "42px",
+                                    maxHeight: "42px"
+                                }}
+                                title="Refresh data"
+                            >
+                                <FaSyncAlt style={{ 
+                                    animation: refreshing ? "spin 1s linear infinite" : "none"
+                                }} />
+                                {refreshing ? "Refreshing..." : "Refresh"}
+                            </button>
                         </div>
                     </div>
                     

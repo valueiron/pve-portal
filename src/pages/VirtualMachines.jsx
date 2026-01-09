@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { FaPowerOff, FaPlay, FaSearch } from "react-icons/fa";
+import { FaPowerOff, FaPlay, FaSearch, FaSyncAlt } from "react-icons/fa";
 import "./Page.css";
 import { fetchVMs, startVM, shutdownVM } from "../services/vmService";
 
@@ -10,31 +10,37 @@ const VirtualMachines = () => {
     const [actionLoading, setActionLoading] = useState({});
     const [searchQuery, setSearchQuery] = useState("");
     const [typeFilter, setTypeFilter] = useState("all"); // "all", "proxmox", "azure", "aws"
+    const [refreshing, setRefreshing] = useState(false);
+
+    const loadVMs = async (forceRefresh = false) => {
+        try {
+            if (forceRefresh) {
+                setRefreshing(true);
+            } else {
+                setLoading(true);
+            }
+            setError(null);
+            const vmData = await fetchVMs(forceRefresh);
+            setVms(vmData);
+        } catch (err) {
+            setError(err.message || "Failed to load virtual machines");
+            console.error("Error loading VMs:", err);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
-        const loadVMs = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                const vmData = await fetchVMs();
-                setVms(vmData);
-            } catch (err) {
-                setError(err.message || "Failed to load virtual machines");
-                console.error("Error loading VMs:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadVMs();
+        loadVMs(false);
     }, []);
 
     const handleStartVM = async (vmid) => {
         try {
             setActionLoading(prev => ({ ...prev, [vmid]: true }));
             await startVM(vmid);
-            // Reload VMs to get updated status
-            const vmData = await fetchVMs();
+            // Reload VMs to get updated status (force refresh to get latest data)
+            const vmData = await fetchVMs(true);
             setVms(vmData);
         } catch (err) {
             alert(`Failed to start VM: ${err.message}`);
@@ -51,8 +57,8 @@ const VirtualMachines = () => {
         try {
             setActionLoading(prev => ({ ...prev, [vmid]: true }));
             await shutdownVM(vmid);
-            // Reload VMs to get updated status
-            const vmData = await fetchVMs();
+            // Reload VMs to get updated status (force refresh to get latest data)
+            const vmData = await fetchVMs(true);
             setVms(vmData);
         } catch (err) {
             alert(`Failed to shutdown VM: ${err.message}`);
@@ -235,6 +241,51 @@ const VirtualMachines = () => {
                                     onBlur={(e) => e.target.style.borderColor = "#6b6b6b"}
                                 />
                             </div>
+                        </div>
+
+                        {/* Refresh Button */}
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                            <label style={{ 
+                                display: "block", 
+                                marginBottom: "0.5rem", 
+                                color: "rgba(255, 255, 255, 0.87)", 
+                                fontSize: "0.9rem",
+                                fontWeight: "500",
+                                height: "1.5rem"
+                            }}>
+                                &nbsp;
+                            </label>
+                            <button
+                                onClick={() => loadVMs(true)}
+                                disabled={refreshing || loading}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.75rem 1rem",
+                                    border: "1px solid transparent",
+                                    borderRadius: "8px",
+                                    backgroundColor: refreshing || loading ? "#6b6b6b" : "#4caf50",
+                                    color: "#fff",
+                                    cursor: refreshing || loading ? "not-allowed" : "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "0.5rem",
+                                    fontSize: "1rem",
+                                    fontWeight: "500",
+                                    transition: "background-color 0.2s, opacity 0.2s",
+                                    opacity: refreshing || loading ? 0.6 : 1,
+                                    lineHeight: "1",
+                                    boxSizing: "border-box",
+                                    minHeight: "42px",
+                                    maxHeight: "42px"
+                                }}
+                                title="Refresh data"
+                            >
+                                <FaSyncAlt style={{ 
+                                    animation: refreshing ? "spin 1s linear infinite" : "none"
+                                }} />
+                                {refreshing ? "Refreshing..." : "Refresh"}
+                            </button>
                         </div>
                     </div>
                     
