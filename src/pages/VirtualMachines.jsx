@@ -9,7 +9,7 @@ const VirtualMachines = () => {
     const [error, setError] = useState(null);
     const [actionLoading, setActionLoading] = useState({});
     const [searchQuery, setSearchQuery] = useState("");
-    const [typeFilter, setTypeFilter] = useState("all"); // "all", "proxmox", "azure"
+    const [typeFilter, setTypeFilter] = useState("all"); // "all", "proxmox", "azure", "aws"
 
     useEffect(() => {
         const loadVMs = async () => {
@@ -106,7 +106,7 @@ const VirtualMachines = () => {
         // Filter by type
         if (typeFilter !== "all") {
             filtered = filtered.filter((vm) => {
-                const vmType = vm.type || (typeof vm.vmid === 'string' && vm.vmid.startsWith('azure-') ? 'azure' : 'proxmox');
+                const vmType = vm.type || (typeof vm.vmid === 'string' && vm.vmid.startsWith('azure-') ? 'azure' : (typeof vm.vmid === 'string' && vm.vmid.startsWith('aws-') ? 'aws' : 'proxmox'));
                 return vmType === typeFilter;
             });
         }
@@ -183,6 +183,7 @@ const VirtualMachines = () => {
                                 <option value="all">All VMs</option>
                                 <option value="proxmox">Proxmox</option>
                                 <option value="azure">Azure</option>
+                                <option value="aws">AWS</option>
                             </select>
                         </div>
 
@@ -278,9 +279,20 @@ const VirtualMachines = () => {
                 {!loading && !error && filteredVMs.length > 0 && (
                     <>
                         {filteredVMs.map((vm) => {
-                            const vmType = vm.type || (typeof vm.vmid === 'string' && vm.vmid.startsWith('azure-') ? 'azure' : 'proxmox');
+                            const vmType = vm.type || (typeof vm.vmid === 'string' && vm.vmid.startsWith('azure-') ? 'azure' : (typeof vm.vmid === 'string' && vm.vmid.startsWith('aws-') ? 'aws' : 'proxmox'));
                             const isProxmox = vmType === 'proxmox';
                             const isAzure = vmType === 'azure';
+                            const isAWS = vmType === 'aws';
+                            
+                            // Determine icon source
+                            let iconSrc = "/Proxmox.png";
+                            if (isAzure) iconSrc = "/Azure.png";
+                            else if (isAWS) iconSrc = "/AWS.png";
+                            
+                            // Determine node label
+                            let nodeLabel = "Node";
+                            if (isAzure) nodeLabel = "Resource Group";
+                            else if (isAWS) nodeLabel = "Availability Zone";
                             
                             return (
                                 <div key={`${vmType}-${vm.node}-${vm.vmid}`} className="page-card">
@@ -291,7 +303,7 @@ const VirtualMachines = () => {
                                                     {vm.name || `VM ${vm.vmid}`}
                                                 </h2>
                                                 <img 
-                                                    src={isAzure ? "/Azure.png" : "/Proxmox.png"}
+                                                    src={iconSrc}
                                                     alt={vmType}
                                                     style={{
                                                         height: "24px",
@@ -304,7 +316,7 @@ const VirtualMachines = () => {
                                                 <strong>VM ID:</strong> {vm.vmid}
                                             </p>
                                             <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
-                                                <strong>{isAzure ? "Resource Group" : "Node"}:</strong> {vm.node}
+                                                <strong>{nodeLabel}:</strong> {vm.node}
                                             </p>
                                         </div>
                                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
