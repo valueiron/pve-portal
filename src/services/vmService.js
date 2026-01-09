@@ -110,4 +110,3 @@ export const shutdownVM = async (vmid) => {
     throw error;
   }
 };
-

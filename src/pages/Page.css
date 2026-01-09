@@ -8,12 +8,12 @@
     font-size: 2.5rem;
     font-weight: 600;
     margin-bottom: 1rem;
-    color: #000000;
+    color: rgba(255, 255, 255, 0.87);
 }
 
 .page-description {
     font-size: 1.1rem;
-    color: #333333;
+    color: rgba(255, 255, 255, 0.7);
     margin-bottom: 2rem;
     line-height: 1.6;
 }
@@ -40,11 +40,11 @@
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #000000;
+    color: rgba(255, 255, 255, 0.87);
 }
 
 .page-card p {
-    color: #000000;
+    color: rgba(255, 255, 255, 0.87);
     margin: 0;
     line-height: 1.6;
 }
