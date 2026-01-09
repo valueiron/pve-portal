@@ -94,10 +94,27 @@ const Networking = () => {
                 const id = (resource.id || "").toLowerCase();
                 const location = (resource.location || resource.region || resource.resource_group || "").toLowerCase();
                 
+                // Handle different tag formats for search
+                let tags = '';
+                if (resource.tags && resource.tags.length > 0) {
+                    const tagStrings = resource.tags.map(tag => {
+                        if (typeof tag === 'string') {
+                            return tag;
+                        } else if (typeof tag === 'object' && tag !== null) {
+                            const tagKey = tag.key || '';
+                            const tagValue = tag.value || '';
+                            return tagValue ? `${tagKey}:${tagValue}` : tagKey;
+                        }
+                        return String(tag);
+                    });
+                    tags = tagStrings.join(' ').toLowerCase();
+                }
+                
                 return (
                     name.includes(query) ||
                     id.includes(query) ||
-                    location.includes(query)
+                    location.includes(query) ||
+                    tags.includes(query)
                 );
             });
         }
@@ -116,6 +133,37 @@ const Networking = () => {
             'elastic_ip': 'Elastic IP'
         };
         return labels[resourceType] || resourceType;
+    };
+
+    // Generate a consistent color for a tag based on its name
+    const getTagColor = (tagName) => {
+        // Predefined color palette for tags - brighter and bolder colors
+        const colors = [
+            { bg: 'rgba(76, 175, 80, 0.4)', border: '#4caf50', text: '#4caf50', borderWidth: '2px' },      // Green
+            { bg: 'rgba(33, 150, 243, 0.4)', border: '#2196f3', text: '#2196f3', borderWidth: '2px' },      // Blue
+            { bg: 'rgba(255, 152, 0, 0.4)', border: '#ff9800', text: '#ff9800', borderWidth: '2px' },      // Orange
+            { bg: 'rgba(156, 39, 176, 0.4)', border: '#9c27b0', text: '#9c27b0', borderWidth: '2px' },     // Purple
+            { bg: 'rgba(244, 67, 54, 0.4)', border: '#f44336', text: '#f44336', borderWidth: '2px' },      // Red
+            { bg: 'rgba(0, 188, 212, 0.4)', border: '#00bcd4', text: '#00bcd4', borderWidth: '2px' },      // Cyan
+            { bg: 'rgba(255, 235, 59, 0.4)', border: '#ffc107', text: '#ffc107', borderWidth: '2px' },     // Yellow/Amber
+            { bg: 'rgba(103, 58, 183, 0.4)', border: '#673ab7', text: '#673ab7', borderWidth: '2px' },     // Deep Purple
+            { bg: 'rgba(255, 87, 34, 0.4)', border: '#ff5722', text: '#ff5722', borderWidth: '2px' },      // Deep Orange
+            { bg: 'rgba(0, 150, 136, 0.4)', border: '#009688', text: '#009688', borderWidth: '2px' },      // Teal
+            { bg: 'rgba(233, 30, 99, 0.4)', border: '#e91e63', text: '#e91e63', borderWidth: '2px' },      // Pink
+            { bg: 'rgba(3, 169, 244, 0.4)', border: '#03a9f4', text: '#03a9f4', borderWidth: '2px' },     // Light Blue
+            { bg: 'rgba(139, 195, 74, 0.4)', border: '#8bc34a', text: '#8bc34a', borderWidth: '2px' },     // Light Green
+            { bg: 'rgba(255, 193, 7, 0.4)', border: '#ffc107', text: '#ffc107', borderWidth: '2px' },     // Amber
+        ];
+        
+        // Hash the tag name to get a consistent index
+        let hash = 0;
+        for (let i = 0; i < tagName.length; i++) {
+            hash = tagName.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        // Use absolute value and modulo to get index
+        const index = Math.abs(hash) % colors.length;
+        return colors[index];
     };
 
     const renderResourceCard = (resource) => {
@@ -164,6 +212,52 @@ const Networking = () => {
                             <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
                                 <strong>Resource Group:</strong> {resource.resource_group}
                             </p>
+                        )}
+                        {resource.tags && resource.tags.length > 0 && (
+                            <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+                                <strong style={{ color: "rgba(255, 255, 255, 0.87)", marginRight: "0.25rem" }}>Tags:</strong>
+                                {resource.tags.map((tag, index) => {
+                                    // Handle different tag formats: Proxmox tags are strings, Azure/AWS tags are objects
+                                    let tagDisplay = '';
+                                    let tagKey = '';
+                                    
+                                    if (typeof tag === 'string') {
+                                        // Proxmox tags are just strings
+                                        tagDisplay = tag;
+                                        tagKey = tag;
+                                    } else if (typeof tag === 'object' && tag !== null) {
+                                        // Azure/AWS tags are objects with key and value
+                                        tagKey = tag.key || '';
+                                        const tagValue = tag.value || '';
+                                        tagDisplay = tagValue ? `${tagKey}:${tagValue}` : tagKey;
+                                    } else {
+                                        tagDisplay = String(tag);
+                                        tagKey = String(tag);
+                                    }
+                                    
+                                    const tagColor = getTagColor(tagKey);
+                                    return (
+                                        <span
+                                            key={index}
+                                            style={{
+                                                padding: "0.35rem 0.65rem",
+                                                borderRadius: "6px",
+                                                backgroundColor: tagColor.bg,
+                                                color: tagColor.text,
+                                                border: `${tagColor.borderWidth || '2px'} solid ${tagColor.border}`,
+                                                fontSize: "0.8rem",
+                                                fontWeight: "600",
+                                                lineHeight: "1.2",
+                                                textTransform: "uppercase",
+                                                letterSpacing: "0.5px",
+                                                boxShadow: `0 2px 4px rgba(0, 0, 0, 0.2)`
+                                            }}
+                                        >
+                                            {tagDisplay}
+                                        </span>
+                                    );
+                                })}
+                            </div>
                         )}
                     </div>
                 </div>

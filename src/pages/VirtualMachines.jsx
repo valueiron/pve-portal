@@ -156,7 +156,22 @@ const VirtualMachines = () => {
                 const vmid = vm.vmid.toString().toLowerCase();
                 const node = (vm.node || "").toLowerCase();
                 const status = (vm.status || "").toLowerCase();
-                const tags = (vm.tags || []).join(' ').toLowerCase();
+                
+                // Handle different tag formats for search
+                let tags = '';
+                if (vm.tags && vm.tags.length > 0) {
+                    const tagStrings = vm.tags.map(tag => {
+                        if (typeof tag === 'string') {
+                            return tag;
+                        } else if (typeof tag === 'object' && tag !== null) {
+                            const tagKey = tag.key || '';
+                            const tagValue = tag.value || '';
+                            return tagValue ? `${tagKey}:${tagValue}` : tagKey;
+                        }
+                        return String(tag);
+                    });
+                    tags = tagStrings.join(' ').toLowerCase();
+                }
 
                 return (
                     name.includes(query) ||
@@ -402,11 +417,29 @@ const VirtualMachines = () => {
                                             <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
                                                 <strong>{nodeLabel}:</strong> {vm.node}
                                             </p>
-                                            {isProxmox && vm.tags && vm.tags.length > 0 && (
+                                            {vm.tags && vm.tags.length > 0 && (
                                                 <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
                                                     <strong style={{ color: "rgba(255, 255, 255, 0.87)", marginRight: "0.25rem" }}>Tags:</strong>
                                                     {vm.tags.map((tag, index) => {
-                                                        const tagColor = getTagColor(tag);
+                                                        // Handle different tag formats: Proxmox tags are strings, Azure/AWS tags are objects
+                                                        let tagDisplay = '';
+                                                        let tagKey = '';
+                                                        
+                                                        if (typeof tag === 'string') {
+                                                            // Proxmox tags are just strings
+                                                            tagDisplay = tag;
+                                                            tagKey = tag;
+                                                        } else if (typeof tag === 'object' && tag !== null) {
+                                                            // Azure/AWS tags are objects with key and value
+                                                            tagKey = tag.key || '';
+                                                            const tagValue = tag.value || '';
+                                                            tagDisplay = tagValue ? `${tagKey}:${tagValue}` : tagKey;
+                                                        } else {
+                                                            tagDisplay = String(tag);
+                                                            tagKey = String(tag);
+                                                        }
+                                                        
+                                                        const tagColor = getTagColor(tagKey);
                                                         return (
                                                             <span
                                                                 key={index}
@@ -424,7 +457,7 @@ const VirtualMachines = () => {
                                                                     boxShadow: `0 2px 4px rgba(0, 0, 0, 0.2)`
                                                                 }}
                                                             >
-                                                                {tag}
+                                                                {tagDisplay}
                                                             </span>
                                                         );
                                                     })}
