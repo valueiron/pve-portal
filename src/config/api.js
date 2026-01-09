@@ -42,6 +42,7 @@ export const API_ENDPOINTS = {
   VM_DETAILS: (vmid) => `${API_BASE_URL}/api/vms/${vmid}`,
   NODES: `${API_BASE_URL}/api/nodes`,
   NETWORKING: `${API_BASE_URL}/api/networking`,
+  STORAGE: `${API_BASE_URL}/api/storage`,
 };
 
 export default API_BASE_URL;
