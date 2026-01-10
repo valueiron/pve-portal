@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { FaSearch, FaSyncAlt } from "react-icons/fa";
+import { FaSearch, FaSyncAlt, FaTh, FaTable } from "react-icons/fa";
 import "./Page.css";
 import { fetchNetworking } from "../services/networkingService";
 
@@ -19,6 +19,7 @@ const Networking = () => {
     const [typeFilter, setTypeFilter] = useState("all"); // "all", "azure", "aws"
     const [resourceTypeFilter, setResourceTypeFilter] = useState("all"); // "all", "vnet", "subnet", "nsg", "public_ip", "vpc", "security_group", "elastic_ip"
     const [refreshing, setRefreshing] = useState(false);
+    const [viewMode, setViewMode] = useState("card"); // "card" or "table"
 
     const loadNetworking = async (forceRefresh = false) => {
         try {
@@ -133,6 +134,53 @@ const Networking = () => {
             'elastic_ip': 'Elastic IP'
         };
         return labels[resourceType] || resourceType;
+    };
+
+    const renderTags = (tags) => {
+        if (!tags || tags.length === 0) return <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>—</span>;
+        
+        return (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center" }}>
+                {tags.map((tag, index) => {
+                    let tagDisplay = '';
+                    let tagKey = '';
+                    
+                    if (typeof tag === 'string') {
+                        tagDisplay = tag;
+                        tagKey = tag;
+                    } else if (typeof tag === 'object' && tag !== null) {
+                        tagKey = tag.key || '';
+                        const tagValue = tag.value || '';
+                        tagDisplay = tagValue ? `${tagKey}:${tagValue}` : tagKey;
+                    } else {
+                        tagDisplay = String(tag);
+                        tagKey = String(tag);
+                    }
+                    
+                    const tagColor = getTagColor(tagKey);
+                    return (
+                        <span
+                            key={index}
+                            style={{
+                                padding: "0.25rem 0.5rem",
+                                borderRadius: "4px",
+                                backgroundColor: tagColor.bg,
+                                color: tagColor.text,
+                                border: `${tagColor.borderWidth || '2px'} solid ${tagColor.border}`,
+                                fontSize: "0.75rem",
+                                fontWeight: "600",
+                                lineHeight: "1.2",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.3px",
+                                whiteSpace: "nowrap"
+                            }}
+                        >
+                            {tagDisplay}
+                        </span>
+                    );
+                })}
+            </div>
+        );
     };
 
     // Generate a consistent color for a tag based on its name
@@ -576,6 +624,47 @@ const Networking = () => {
                             </div>
                         </div>
 
+                        {/* View Toggle Button */}
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                            <label style={{ 
+                                display: "block", 
+                                marginBottom: "0.5rem", 
+                                color: "rgba(255, 255, 255, 0.87)", 
+                                fontSize: "0.9rem",
+                                fontWeight: "500",
+                                height: "1.5rem"
+                            }}>
+                                &nbsp;
+                            </label>
+                            <button
+                                onClick={() => setViewMode(viewMode === "card" ? "table" : "card")}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.75rem 1rem",
+                                    border: "1px solid transparent",
+                                    borderRadius: "8px",
+                                    backgroundColor: "#6b6b6b",
+                                    color: "#fff",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "0.5rem",
+                                    fontSize: "1rem",
+                                    fontWeight: "500",
+                                    transition: "background-color 0.2s, opacity 0.2s",
+                                    lineHeight: "1",
+                                    boxSizing: "border-box",
+                                    minHeight: "42px",
+                                    maxHeight: "42px"
+                                }}
+                                title={`Switch to ${viewMode === "card" ? "table" : "card"} view`}
+                            >
+                                {viewMode === "card" ? <FaTable /> : <FaTh />}
+                                {viewMode === "card" ? "Table" : "Cards"}
+                            </button>
+                        </div>
+
                         {/* Refresh Button */}
                         <div style={{ display: "flex", flexDirection: "column" }}>
                             <label style={{ 
@@ -660,10 +749,93 @@ const Networking = () => {
                     </div>
                 )}
 
-                {!loading && !error && filteredResources.length > 0 && (
+                {!loading && !error && filteredResources.length > 0 && viewMode === "card" && (
                     <>
                         {filteredResources.map((resource) => renderResourceCard(resource))}
                     </>
+                )}
+
+                {!loading && !error && filteredResources.length > 0 && viewMode === "table" && (
+                    <div className="page-table-container">
+                        <table className="page-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>ID</th>
+                                    <th>Location/Region</th>
+                                    <th>Details</th>
+                                    <th>Tags</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredResources.map((resource) => {
+                                    const isAzure = resource.type === 'azure';
+                                    const isAWS = resource.type === 'aws';
+                                    
+                                    // Determine icon source
+                                    let iconSrc = "/Azure.png";
+                                    if (isAWS) iconSrc = "/AWS.png";
+
+                                    // Build details column based on resource type
+                                    let details = [];
+                                    if (resource.resource_type === 'vnet' && resource.address_space) {
+                                        details.push(`Address Space: ${resource.address_space.join(', ')}`);
+                                    } else if (resource.resource_type === 'subnet') {
+                                        if (resource.address_prefix) details.push(`CIDR: ${resource.address_prefix}`);
+                                        if (resource.cidr_block) details.push(`CIDR: ${resource.cidr_block}`);
+                                        if (resource.vnet_name) details.push(`VNet: ${resource.vnet_name}`);
+                                        if (resource.vpc_id) details.push(`VPC: ${resource.vpc_id}`);
+                                        if (resource.availability_zone) details.push(`AZ: ${resource.availability_zone}`);
+                                        if (resource.state) details.push(`State: ${resource.state}`);
+                                    } else if (resource.resource_type === 'nsg' && resource.location) {
+                                        details.push(`Location: ${resource.location}`);
+                                    } else if (resource.resource_type === 'public_ip') {
+                                        if (resource.ip_address) details.push(`IP: ${resource.ip_address}`);
+                                        if (resource.allocation_method) details.push(`Allocation: ${resource.allocation_method}`);
+                                    } else if (resource.resource_type === 'vpc') {
+                                        if (resource.cidr_block) details.push(`CIDR: ${resource.cidr_block}`);
+                                        if (resource.state) details.push(`State: ${resource.state}`);
+                                    } else if (resource.resource_type === 'security_group') {
+                                        if (resource.vpc_id) details.push(`VPC: ${resource.vpc_id}`);
+                                        if (resource.description) details.push(`Description: ${resource.description}`);
+                                    } else if (resource.resource_type === 'elastic_ip') {
+                                        if (resource.public_ip) details.push(`Public IP: ${resource.public_ip}`);
+                                        if (resource.private_ip) details.push(`Private IP: ${resource.private_ip}`);
+                                        if (resource.instance_id) details.push(`Instance: ${resource.instance_id}`);
+                                        if (resource.domain) details.push(`Domain: ${resource.domain}`);
+                                    }
+                                    const detailsText = details.length > 0 ? details.join(' | ') : '—';
+
+                                    const location = resource.location || resource.region || resource.resource_group || '—';
+                                    
+                                    return (
+                                        <tr key={`${resource.type}-${resource.resource_type}-${resource.id}`}>
+                                            <td>
+                                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                                    <span>{resource.displayName || resource.id}</span>
+                                                    <img 
+                                                        src={iconSrc}
+                                                        alt={resource.type}
+                                                        style={{
+                                                            height: "20px",
+                                                            width: "auto",
+                                                            objectFit: "contain"
+                                                        }}
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td>{getResourceTypeLabel(resource.resource_type)}</td>
+                                            <td style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={resource.id}>{resource.id}</td>
+                                            <td>{location}</td>
+                                            <td style={{ fontSize: "0.85rem", maxWidth: "300px" }}>{detailsText}</td>
+                                            <td>{renderTags(resource.tags)}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
         </div>

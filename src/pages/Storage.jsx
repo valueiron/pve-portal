@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { FaSearch, FaSyncAlt } from "react-icons/fa";
+import { FaSearch, FaSyncAlt, FaTh, FaTable } from "react-icons/fa";
 import "./Page.css";
 import { fetchStorage } from "../services/storageService";
 
@@ -16,6 +16,7 @@ const Storage = () => {
     const [typeFilter, setTypeFilter] = useState("all"); // "all", "azure", "aws"
     const [resourceTypeFilter, setResourceTypeFilter] = useState("all"); // "all", "storage_account", "blob_container", "s3_bucket"
     const [refreshing, setRefreshing] = useState(false);
+    const [viewMode, setViewMode] = useState("card"); // "card" or "table"
 
     const loadStorage = async (forceRefresh = false) => {
         try {
@@ -154,6 +155,53 @@ const Storage = () => {
             'proxmox_storage': 'Proxmox Storage'
         };
         return labels[resourceType] || resourceType;
+    };
+
+    const renderTags = (tags) => {
+        if (!tags || tags.length === 0) return <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>—</span>;
+        
+        return (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center" }}>
+                {tags.map((tag, index) => {
+                    let tagDisplay = '';
+                    let tagKey = '';
+                    
+                    if (typeof tag === 'string') {
+                        tagDisplay = tag;
+                        tagKey = tag;
+                    } else if (typeof tag === 'object' && tag !== null) {
+                        tagKey = tag.key || '';
+                        const tagValue = tag.value || '';
+                        tagDisplay = tagValue ? `${tagKey}:${tagValue}` : tagKey;
+                    } else {
+                        tagDisplay = String(tag);
+                        tagKey = String(tag);
+                    }
+                    
+                    const tagColor = getTagColor(tagKey);
+                    return (
+                        <span
+                            key={index}
+                            style={{
+                                padding: "0.25rem 0.5rem",
+                                borderRadius: "4px",
+                                backgroundColor: tagColor.bg,
+                                color: tagColor.text,
+                                border: `${tagColor.borderWidth || '2px'} solid ${tagColor.border}`,
+                                fontSize: "0.75rem",
+                                fontWeight: "600",
+                                lineHeight: "1.2",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.3px",
+                                whiteSpace: "nowrap"
+                            }}
+                        >
+                            {tagDisplay}
+                        </span>
+                    );
+                })}
+            </div>
+        );
     };
 
     const renderResourceCard = (resource) => {
@@ -547,6 +595,47 @@ const Storage = () => {
                             </div>
                         </div>
 
+                        {/* View Toggle Button */}
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                            <label style={{ 
+                                display: "block", 
+                                marginBottom: "0.5rem", 
+                                color: "rgba(255, 255, 255, 0.87)", 
+                                fontSize: "0.9rem",
+                                fontWeight: "500",
+                                height: "1.5rem"
+                            }}>
+                                &nbsp;
+                            </label>
+                            <button
+                                onClick={() => setViewMode(viewMode === "card" ? "table" : "card")}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.75rem 1rem",
+                                    border: "1px solid transparent",
+                                    borderRadius: "8px",
+                                    backgroundColor: "#6b6b6b",
+                                    color: "#fff",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "0.5rem",
+                                    fontSize: "1rem",
+                                    fontWeight: "500",
+                                    transition: "background-color 0.2s, opacity 0.2s",
+                                    lineHeight: "1",
+                                    boxSizing: "border-box",
+                                    minHeight: "42px",
+                                    maxHeight: "42px"
+                                }}
+                                title={`Switch to ${viewMode === "card" ? "table" : "card"} view`}
+                            >
+                                {viewMode === "card" ? <FaTable /> : <FaTh />}
+                                {viewMode === "card" ? "Table" : "Cards"}
+                            </button>
+                        </div>
+
                         {/* Refresh Button */}
                         <div style={{ display: "flex", flexDirection: "column" }}>
                             <label style={{ 
@@ -631,10 +720,90 @@ const Storage = () => {
                     </div>
                 )}
 
-                {!loading && !error && filteredResources.length > 0 && (
+                {!loading && !error && filteredResources.length > 0 && viewMode === "card" && (
                     <>
                         {filteredResources.map((resource) => renderResourceCard(resource))}
                     </>
+                )}
+
+                {!loading && !error && filteredResources.length > 0 && viewMode === "table" && (
+                    <div className="page-table-container">
+                        <table className="page-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>ID</th>
+                                    <th>Location/Region/Node</th>
+                                    <th>Details</th>
+                                    <th>Tags</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredResources.map((resource) => {
+                                    const isAzure = resource.type === 'azure';
+                                    const isAWS = resource.type === 'aws';
+                                    const isProxmox = resource.type === 'proxmox';
+                                    
+                                    // Determine icon source
+                                    let iconSrc = "/Azure.png";
+                                    if (isAWS) iconSrc = "/AWS.png";
+                                    if (isProxmox) iconSrc = "/Proxmox.png";
+
+                                    // Build details column based on resource type
+                                    let details = [];
+                                    if (resource.resource_type === 'storage_account') {
+                                        if (resource.kind) details.push(`Kind: ${resource.kind}`);
+                                        if (resource.sku) details.push(`SKU: ${resource.sku}`);
+                                        if (resource.primary_blob_endpoint) details.push(`Endpoint: ${resource.primary_blob_endpoint}`);
+                                    } else if (resource.resource_type === 'blob_container') {
+                                        if (resource.storage_account) details.push(`Account: ${resource.storage_account}`);
+                                        if (resource.public_access) details.push(`Access: ${resource.public_access}`);
+                                        if (resource.last_modified) details.push(`Modified: ${new Date(resource.last_modified).toLocaleDateString()}`);
+                                    } else if (resource.resource_type === 's3_bucket') {
+                                        if (resource.creation_date) details.push(`Created: ${new Date(resource.creation_date).toLocaleDateString()}`);
+                                        if (resource.size_bytes !== undefined) details.push(`Size: ${formatBytes(resource.size_bytes)}`);
+                                        if (resource.object_count !== undefined) details.push(`Objects: ${resource.object_count.toLocaleString()}`);
+                                    } else if (resource.resource_type === 'proxmox_storage') {
+                                        if (resource.storage_type) details.push(`Type: ${resource.storage_type}`);
+                                        if (resource.content) details.push(`Content: ${resource.content}`);
+                                        if (resource.total_bytes !== undefined) details.push(`Total: ${formatBytes(resource.total_bytes)}`);
+                                        if (resource.used_bytes !== undefined) details.push(`Used: ${formatBytes(resource.used_bytes)}`);
+                                        if (resource.avail_bytes !== undefined) details.push(`Avail: ${formatBytes(resource.avail_bytes)}`);
+                                        if (resource.active !== undefined) details.push(`Active: ${resource.active ? 'Yes' : 'No'}`);
+                                        if (resource.enabled !== undefined) details.push(`Enabled: ${resource.enabled ? 'Yes' : 'No'}`);
+                                    }
+                                    const detailsText = details.length > 0 ? details.join(' | ') : '—';
+
+                                    const location = resource.location || resource.region || resource.resource_group || resource.node || '—';
+                                    
+                                    return (
+                                        <tr key={`${resource.type}-${resource.resource_type}-${resource.id}`}>
+                                            <td>
+                                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                                    <span>{resource.displayName || resource.id}</span>
+                                                    <img 
+                                                        src={iconSrc}
+                                                        alt={resource.type}
+                                                        style={{
+                                                            height: "20px",
+                                                            width: "auto",
+                                                            objectFit: "contain"
+                                                        }}
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td>{getResourceTypeLabel(resource.resource_type)}</td>
+                                            <td style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={resource.id}>{resource.id}</td>
+                                            <td>{location}</td>
+                                            <td style={{ fontSize: "0.85rem", maxWidth: "300px" }}>{detailsText}</td>
+                                            <td>{renderTags(resource.tags)}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
         </div>

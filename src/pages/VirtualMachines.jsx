@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { FaPowerOff, FaPlay, FaSearch, FaSyncAlt } from "react-icons/fa";
+import { FaPowerOff, FaPlay, FaSearch, FaSyncAlt, FaTh, FaTable } from "react-icons/fa";
 import "./Page.css";
 import { fetchVMs, startVM, shutdownVM } from "../services/vmService";
 
@@ -11,6 +11,7 @@ const VirtualMachines = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [typeFilter, setTypeFilter] = useState("all"); // "all", "proxmox", "azure", "aws"
     const [refreshing, setRefreshing] = useState(false);
+    const [viewMode, setViewMode] = useState("card"); // "card" or "table"
 
     const loadVMs = async (forceRefresh = false) => {
         try {
@@ -134,6 +135,53 @@ const VirtualMachines = () => {
             default:
                 return "#9e9e9e";
         }
+    };
+
+    const renderTags = (tags) => {
+        if (!tags || tags.length === 0) return <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>—</span>;
+        
+        return (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center" }}>
+                {tags.map((tag, index) => {
+                    let tagDisplay = '';
+                    let tagKey = '';
+                    
+                    if (typeof tag === 'string') {
+                        tagDisplay = tag;
+                        tagKey = tag;
+                    } else if (typeof tag === 'object' && tag !== null) {
+                        tagKey = tag.key || '';
+                        const tagValue = tag.value || '';
+                        tagDisplay = tagValue ? `${tagKey}:${tagValue}` : tagKey;
+                    } else {
+                        tagDisplay = String(tag);
+                        tagKey = String(tag);
+                    }
+                    
+                    const tagColor = getTagColor(tagKey);
+                    return (
+                        <span
+                            key={index}
+                            style={{
+                                padding: "0.25rem 0.5rem",
+                                borderRadius: "4px",
+                                backgroundColor: tagColor.bg,
+                                color: tagColor.text,
+                                border: `${tagColor.borderWidth || '2px'} solid ${tagColor.border}`,
+                                fontSize: "0.75rem",
+                                fontWeight: "600",
+                                lineHeight: "1.2",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.3px",
+                                whiteSpace: "nowrap"
+                            }}
+                        >
+                            {tagDisplay}
+                        </span>
+                    );
+                })}
+            </div>
+        );
     };
 
     // Filter VMs based on search query and type filter
@@ -291,6 +339,47 @@ const VirtualMachines = () => {
                             </div>
                         </div>
 
+                        {/* View Toggle Button */}
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                            <label style={{ 
+                                display: "block", 
+                                marginBottom: "0.5rem", 
+                                color: "rgba(255, 255, 255, 0.87)", 
+                                fontSize: "0.9rem",
+                                fontWeight: "500",
+                                height: "1.5rem"
+                            }}>
+                                &nbsp;
+                            </label>
+                            <button
+                                onClick={() => setViewMode(viewMode === "card" ? "table" : "card")}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.75rem 1rem",
+                                    border: "1px solid transparent",
+                                    borderRadius: "8px",
+                                    backgroundColor: "#6b6b6b",
+                                    color: "#fff",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "0.5rem",
+                                    fontSize: "1rem",
+                                    fontWeight: "500",
+                                    transition: "background-color 0.2s, opacity 0.2s",
+                                    lineHeight: "1",
+                                    boxSizing: "border-box",
+                                    minHeight: "42px",
+                                    maxHeight: "42px"
+                                }}
+                                title={`Switch to ${viewMode === "card" ? "table" : "card"} view`}
+                            >
+                                {viewMode === "card" ? <FaTable /> : <FaTh />}
+                                {viewMode === "card" ? "Table" : "Cards"}
+                            </button>
+                        </div>
+
                         {/* Refresh Button */}
                         <div style={{ display: "flex", flexDirection: "column" }}>
                             <label style={{ 
@@ -375,7 +464,7 @@ const VirtualMachines = () => {
                     </div>
                 )}
 
-                {!loading && !error && filteredVMs.length > 0 && (
+                {!loading && !error && filteredVMs.length > 0 && viewMode === "card" && (
                     <>
                         {filteredVMs.map((vm) => {
                             const vmType = vm.type || (typeof vm.vmid === 'string' && vm.vmid.startsWith('azure-') ? 'azure' : (typeof vm.vmid === 'string' && vm.vmid.startsWith('aws-') ? 'aws' : 'proxmox'));
@@ -565,6 +654,133 @@ const VirtualMachines = () => {
                             );
                         })}
                     </>
+                )}
+
+                {!loading && !error && filteredVMs.length > 0 && viewMode === "table" && (
+                    <div className="page-table-container">
+                        <table className="page-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>VM ID</th>
+                                    <th>Node/Resource Group/AZ</th>
+                                    <th>Status</th>
+                                    <th>CPU</th>
+                                    <th>Memory</th>
+                                    <th>Disk</th>
+                                    <th>Uptime</th>
+                                    <th>IP Addresses</th>
+                                    <th>Tags</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredVMs.map((vm) => {
+                                    const vmType = vm.type || (typeof vm.vmid === 'string' && vm.vmid.startsWith('azure-') ? 'azure' : (typeof vm.vmid === 'string' && vm.vmid.startsWith('aws-') ? 'aws' : 'proxmox'));
+                                    const isProxmox = vmType === 'proxmox';
+                                    const isAzure = vmType === 'azure';
+                                    const isAWS = vmType === 'aws';
+                                    
+                                    // Determine icon source
+                                    let iconSrc = "/Proxmox.png";
+                                    if (isAzure) iconSrc = "/Azure.png";
+                                    else if (isAWS) iconSrc = "/AWS.png";
+                                    
+                                    // Determine node label
+                                    let nodeLabel = "Node";
+                                    if (isAzure) nodeLabel = "Resource Group";
+                                    else if (isAWS) nodeLabel = "Availability Zone";
+                                    
+                                    return (
+                                        <tr key={`${vmType}-${vm.node}-${vm.vmid}`}>
+                                            <td>
+                                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                                    <span>{vm.name || `VM ${vm.vmid}`}</span>
+                                                    <img 
+                                                        src={iconSrc}
+                                                        alt={vmType}
+                                                        style={{
+                                                            height: "20px",
+                                                            width: "auto",
+                                                            objectFit: "contain"
+                                                        }}
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td>{vm.vmid}</td>
+                                            <td>{vm.node || "—"}</td>
+                                            <td>
+                                                <span style={{ 
+                                                    padding: "0.25rem 0.75rem", 
+                                                    borderRadius: "4px", 
+                                                    backgroundColor: getStatusColor(vm.status),
+                                                    color: "#fff",
+                                                    fontWeight: "600",
+                                                    textTransform: "uppercase",
+                                                    fontSize: "0.75rem"
+                                                }}>
+                                                    {vm.status}
+                                                </span>
+                                            </td>
+                                            <td>{(vm.cpu * 100).toFixed(1)}%</td>
+                                            <td>{formatBytes(vm.mem)} / {formatBytes(vm.maxmem)}</td>
+                                            <td>{formatBytes(vm.disk)} / {formatBytes(vm.maxdisk)}</td>
+                                            <td>{vm.uptime > 0 ? formatUptime(vm.uptime) : "—"}</td>
+                                            <td>{isProxmox && vm.ip_addresses && vm.ip_addresses.length > 0 ? vm.ip_addresses.join(', ') : "—"}</td>
+                                            <td>{renderTags(vm.tags)}</td>
+                                            <td>
+                                                <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
+                                                    {vm.status === "stopped" ? (
+                                                        <button
+                                                            onClick={() => handleStartVM(vm.vmid)}
+                                                            disabled={actionLoading[vm.vmid]}
+                                                            style={{
+                                                                padding: "0.4rem",
+                                                                border: "none",
+                                                                borderRadius: "4px",
+                                                                backgroundColor: "#4caf50",
+                                                                color: "#fff",
+                                                                cursor: actionLoading[vm.vmid] ? "not-allowed" : "pointer",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                                opacity: actionLoading[vm.vmid] ? 0.6 : 1,
+                                                                transition: "opacity 0.2s"
+                                                            }}
+                                                            title="Start VM"
+                                                        >
+                                                            <FaPlay size={14} />
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleShutdownVM(vm.vmid)}
+                                                            disabled={actionLoading[vm.vmid]}
+                                                            style={{
+                                                                padding: "0.4rem",
+                                                                border: "none",
+                                                                borderRadius: "4px",
+                                                                backgroundColor: "#f44336",
+                                                                color: "#fff",
+                                                                cursor: actionLoading[vm.vmid] ? "not-allowed" : "pointer",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                                opacity: actionLoading[vm.vmid] ? 0.6 : 1,
+                                                                transition: "opacity 0.2s"
+                                                            }}
+                                                            title="Shutdown VM"
+                                                        >
+                                                            <FaPowerOff size={14} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
         </div>
