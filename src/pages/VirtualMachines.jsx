@@ -553,6 +553,13 @@ const VirtualMachines = () => {
                                             </p>
                                         </div>
                                     )}
+                                    {isProxmox && vm.ip_addresses && vm.ip_addresses.length > 0 && (
+                                        <div>
+                                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                                <strong>IP Address{vm.ip_addresses.length > 1 ? 'es' : ''}:</strong> {vm.ip_addresses.join(', ')}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             );
