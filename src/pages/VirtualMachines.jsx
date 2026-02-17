@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { FaPowerOff, FaPlay, FaSearch, FaSyncAlt, FaTh, FaTable } from "react-icons/fa";
+import { FaPowerOff, FaPlay, FaSearch, FaSyncAlt, FaTh, FaTable, FaTerminal } from "react-icons/fa";
 import "./Page.css";
-import { fetchVMs, startVM, shutdownVM } from "../services/vmService";
+import { fetchVMs, startVM, shutdownVM, createVNCProxy } from "../services/vmService";
 
 const VirtualMachines = () => {
     const [vms, setVms] = useState([]);
@@ -69,6 +69,30 @@ const VirtualMachines = () => {
         }
     };
 
+
+    const handleOpenConsole = async (vm) => {
+        try {
+            setActionLoading(prev => ({ ...prev, [`console-${vm.vmid}`]: true }));
+            const proxyData = await createVNCProxy(vm.vmid);
+            const params = new URLSearchParams({
+                vmid: vm.vmid.toString(),
+                port: proxyData.port.toString(),
+                vncticket: proxyData.ticket,
+                node: proxyData.node,
+                name: vm.name || `VM ${vm.vmid}`,
+            });
+            window.open(
+                `/console?${params.toString()}`,
+                `vnc-${vm.vmid}`,
+                'width=1024,height=768,menubar=no,toolbar=no,location=no,status=no'
+            );
+        } catch (err) {
+            alert(`Failed to open console: ${err.message}`);
+            console.error("Error opening console:", err);
+        } finally {
+            setActionLoading(prev => ({ ...prev, [`console-${vm.vmid}`]: false }));
+        }
+    };
 
     const formatBytes = (bytes) => {
         if (!bytes || bytes === 0) return "0 B";
@@ -588,6 +612,28 @@ const VirtualMachines = () => {
                                                     </button>
                                                 ) : (
                                                     <>
+                                                        {isProxmox && (
+                                                            <button
+                                                                onClick={() => handleOpenConsole(vm)}
+                                                                disabled={actionLoading[`console-${vm.vmid}`]}
+                                                                style={{
+                                                                    padding: "0.5rem",
+                                                                    border: "none",
+                                                                    borderRadius: "4px",
+                                                                    backgroundColor: "#2196f3",
+                                                                    color: "#fff",
+                                                                    cursor: actionLoading[`console-${vm.vmid}`] ? "not-allowed" : "pointer",
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center",
+                                                                    opacity: actionLoading[`console-${vm.vmid}`] ? 0.6 : 1,
+                                                                    transition: "opacity 0.2s"
+                                                                }}
+                                                                title="Open Console"
+                                                            >
+                                                                <FaTerminal size={16} />
+                                                            </button>
+                                                        )}
                                                         <button
                                                             onClick={() => handleShutdownVM(vm.vmid)}
                                                             disabled={actionLoading[vm.vmid]}
@@ -752,6 +798,29 @@ const VirtualMachines = () => {
                                                             <FaPlay size={14} />
                                                         </button>
                                                     ) : (
+                                                        <>
+                                                        {isProxmox && (
+                                                            <button
+                                                                onClick={() => handleOpenConsole(vm)}
+                                                                disabled={actionLoading[`console-${vm.vmid}`]}
+                                                                style={{
+                                                                    padding: "0.4rem",
+                                                                    border: "none",
+                                                                    borderRadius: "4px",
+                                                                    backgroundColor: "#2196f3",
+                                                                    color: "#fff",
+                                                                    cursor: actionLoading[`console-${vm.vmid}`] ? "not-allowed" : "pointer",
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center",
+                                                                    opacity: actionLoading[`console-${vm.vmid}`] ? 0.6 : 1,
+                                                                    transition: "opacity 0.2s"
+                                                                }}
+                                                                title="Open Console"
+                                                            >
+                                                                <FaTerminal size={14} />
+                                                            </button>
+                                                        )}
                                                         <button
                                                             onClick={() => handleShutdownVM(vm.vmid)}
                                                             disabled={actionLoading[vm.vmid]}
@@ -772,6 +841,7 @@ const VirtualMachines = () => {
                                                         >
                                                             <FaPowerOff size={14} />
                                                         </button>
+                                                        </>
                                                     )}
                                                 </div>
                                             </td>

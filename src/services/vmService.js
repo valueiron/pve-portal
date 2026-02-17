@@ -103,6 +103,33 @@ export const startVM = async (vmid) => {
 };
 
 /**
+ * Create a VNC proxy ticket for a Proxmox VM
+ * @param {number} vmid - Virtual Machine ID
+ * @returns {Promise<Object>} VNC proxy info (ticket, port, node)
+ */
+export const createVNCProxy = async (vmid) => {
+  try {
+    const response = await fetch(API_ENDPOINTS.VNC_PROXY(vmid), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`Error creating VNC proxy for VM ${vmid}:`, error);
+    throw error;
+  }
+};
+
+/**
  * Shutdown a virtual machine
  * @param {number} vmid - Virtual Machine ID
  * @returns {Promise<Object>} Response data

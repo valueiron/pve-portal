@@ -36,10 +36,27 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+// Get WebSocket base URL for VNC proxy (port 5001)
+const getWsBaseUrl = () => {
+  if (typeof window !== 'undefined' && window.location) {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const hostname = window.location.hostname;
+    return `${wsProtocol}//${hostname}:5001`;
+  }
+  return 'ws://localhost:5001';
+};
+
+const WS_BASE_URL = getWsBaseUrl();
+
 // API endpoints
 export const API_ENDPOINTS = {
   VMS: `${API_BASE_URL}/api/vms`,
   VM_DETAILS: (vmid) => `${API_BASE_URL}/api/vms/${vmid}`,
+  VNC_PROXY: (vmid) => `${API_BASE_URL}/api/vms/${vmid}/vncproxy`,
+  VNC_WEBSOCKET: (vmid, port, vncticket, node) => {
+    const params = new URLSearchParams({ vmid, port, vncticket, node });
+    return `${WS_BASE_URL}/vnc?${params.toString()}`;
+  },
   NODES: `${API_BASE_URL}/api/nodes`,
   NETWORKING: `${API_BASE_URL}/api/networking`,
   STORAGE: `${API_BASE_URL}/api/storage`,
