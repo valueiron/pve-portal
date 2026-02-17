@@ -1,39 +1,90 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import {
+  FaServer,
+  FaHdd,
+  FaNetworkWired,
+  FaShieldAlt,
+  FaCog
+} from "react-icons/fa";
 import "./Page.css";
+import "./Home.css";
+
+const sections = [
+    {
+        title: "Virtual Machines",
+        description: "Manage and monitor your virtual machines across Proxmox, Azure, and AWS",
+        icon: FaServer,
+        path: "/virtual-machines",
+        accent: "var(--accent)",
+    },
+    {
+        title: "Storage",
+        description: "Configure and manage storage resources and volumes",
+        icon: FaHdd,
+        path: "/storage",
+        accent: "var(--green)",
+    },
+    {
+        title: "Networking",
+        description: "Network configuration, VNets, subnets, and security groups",
+        icon: FaNetworkWired,
+        path: "/networking",
+        accent: "var(--amber)",
+    },
+    {
+        title: "Firewall",
+        description: "Configure firewall rules and security policies",
+        icon: FaShieldAlt,
+        path: "/firewall",
+        accent: "var(--red)",
+    },
+    {
+        title: "Services",
+        description: "Manage system services and configurations",
+        icon: FaCog,
+        path: "/services",
+        accent: "var(--text-tertiary)",
+    },
+];
 
 const Home = () => {
     return (
         <div className="page-container">
-            <h1 className="page-title">Welcome to PVE Portal</h1>
-            <p className="page-description">
-                Manage your Proxmox Virtual Environment from this portal.
-                Use the navigation menu to access different management sections.
-            </p>
-            <div className="page-content">
-                <div className="page-card">
-                    <h2>Virtual Machines</h2>
-                    <p>Manage and monitor your virtual machines</p>
-                </div>
-                <div className="page-card">
-                    <h2>Storage</h2>
-                    <p>Configure and manage storage resources</p>
-                </div>
-                <div className="page-card">
-                    <h2>Networking</h2>
-                    <p>Network configuration and management</p>
-                </div>
-                <div className="page-card">
-                    <h2>Firewall</h2>
-                    <p>Configure firewall rules and security</p>
-                </div>
-                <div className="page-card">
-                    <h2>Services</h2>
-                    <p>Manage system services and configurations</p>
-                </div>
+            <div className="home-header">
+                <h1 className="page-title">Dashboard</h1>
+                <p className="page-description">
+                    Manage your infrastructure across Proxmox, Azure, and AWS from a single portal.
+                </p>
+            </div>
+            <div className="home-grid">
+                {sections.map((section, index) => {
+                    const Icon = section.icon;
+                    return (
+                        <Link
+                            key={index}
+                            to={section.path}
+                            className="home-card"
+                            style={{ '--card-accent': section.accent }}
+                        >
+                            <div className="home-card-icon">
+                                <Icon />
+                            </div>
+                            <div className="home-card-body">
+                                <h2>{section.title}</h2>
+                                <p>{section.description}</p>
+                            </div>
+                            <div className="home-card-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M6 3L11 8L6 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </div>
+                        </Link>
+                    );
+                })}
             </div>
         </div>
     );
 };
 
 export default Home;
-
