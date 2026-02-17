@@ -6,8 +6,8 @@ import Home from './pages/Home'
 import VirtualMachines from './pages/VirtualMachines'
 import Storage from './pages/Storage'
 import Networking from './pages/Networking'
-import Firewall from './pages/Firewall'
-import Services from './pages/Services'
+import Kubernetes from './pages/Kubernetes'
+import Docker from './pages/Docker'
 import VncConsole from './pages/VncConsole'
 
 function App() {
@@ -34,8 +34,8 @@ function App() {
             <Route path="/virtual-machines" element={<VirtualMachines />} />
             <Route path="/storage" element={<Storage />} />
             <Route path="/networking" element={<Networking />} />
-            <Route path="/firewall" element={<Firewall />} />
-            <Route path="/services" element={<Services />} />
+            <Route path="/kubernetes" element={<Kubernetes />} />
+            <Route path="/docker" element={<Docker />} />
           </Routes>
         </div>
       </main>

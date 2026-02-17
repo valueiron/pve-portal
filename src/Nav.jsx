@@ -4,13 +4,12 @@ import {
   FaServer,
   FaHdd,
   FaNetworkWired,
-  FaShieldAlt,
-  FaCog,
   FaBars,
   FaChevronLeft,
   FaChevronRight,
   FaTimes
 } from "react-icons/fa";
+import { SiKubernetes, SiDocker } from "react-icons/si";
 import "./Nav.css";
 
 let Nav = () => {
@@ -48,8 +47,8 @@ let Nav = () => {
         { name: "Virtual Machines", icon: FaServer, path: "/virtual-machines" },
         { name: "Storage", icon: FaHdd, path: "/storage" },
         { name: "Networking", icon: FaNetworkWired, path: "/networking" },
-        { name: "Firewall", icon: FaShieldAlt, path: "/firewall" },
-        { name: "Services", icon: FaCog, path: "/services" },
+        { name: "Kubernetes", icon: SiKubernetes, path: "/kubernetes" },
+        { name: "Docker", icon: SiDocker, path: "/docker" },
     ];
 
     return (
