@@ -10,15 +10,20 @@
   width: 100%;
   height: 100vh;
   overflow: hidden;
+  background-color: var(--bg-base);
 }
 
 .app-main {
   flex: 1;
-  margin-left: 250px;
-  margin-top: 80px;
-  transition: margin-left 0.3s ease;
+  margin-left: var(--nav-width);
+  margin-top: var(--header-height);
+  transition: margin-left var(--duration-normal) var(--ease-out);
   overflow-y: auto;
-  height: calc(100vh - 80px);
+  height: calc(100vh - var(--header-height));
+  /* Subtle radial glow in the content area */
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(6, 182, 212, 0.03) 0%, transparent 60%),
+    var(--bg-base);
 }
 
 .app-content {
@@ -28,54 +33,22 @@
 
 /* Adjust main content when nav is collapsed */
 .nav-collapsed ~ .app-main {
-  margin-left: 70px;
+  margin-left: var(--nav-collapsed-width);
 }
 
 /* Mobile: full width when nav is hidden */
 @media (max-width: 768px) {
   .app-main {
     margin-left: 0;
-    margin-top: 70px;
-    height: calc(100vh - 70px);
+    margin-top: var(--header-height);
+    height: calc(100vh - var(--header-height));
   }
 
   .nav-collapsed ~ .app-main {
     margin-left: 0;
   }
-}
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+  .app-content {
+    padding: 1.25rem;
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
