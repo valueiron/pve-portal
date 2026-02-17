@@ -3,10 +3,9 @@ import { Link } from "react-router-dom";
 import {
   FaServer,
   FaHdd,
-  FaNetworkWired,
-  FaShieldAlt,
-  FaCog
+  FaNetworkWired
 } from "react-icons/fa";
+import { SiKubernetes, SiDocker } from "react-icons/si";
 import "./Page.css";
 import "./Home.css";
 
@@ -33,17 +32,17 @@ const sections = [
         accent: "var(--amber)",
     },
     {
-        title: "Firewall",
-        description: "Configure firewall rules and security policies",
-        icon: FaShieldAlt,
-        path: "/firewall",
+        title: "Kubernetes",
+        description: "Manage Kubernetes clusters and workloads",
+        icon: SiKubernetes,
+        path: "/kubernetes",
         accent: "var(--red)",
     },
     {
-        title: "Services",
-        description: "Manage system services and configurations",
-        icon: FaCog,
-        path: "/services",
+        title: "Docker",
+        description: "Manage Docker containers and images",
+        icon: SiDocker,
+        path: "/docker",
         accent: "var(--text-tertiary)",
     },
 ];
