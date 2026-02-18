@@ -58,6 +58,9 @@ export const API_ENDPOINTS = {
     return `${WS_BASE_URL}/vnc?${params.toString()}`;
   },
   NODES: `${API_BASE_URL}/api/nodes`,
+  NEXT_VMID: `${API_BASE_URL}/api/nextid`,
+  TEMPLATES: `${API_BASE_URL}/api/templates`,
+  CLONE_VM: `${API_BASE_URL}/api/vms/clone`,
   NETWORKING: `${API_BASE_URL}/api/networking`,
   STORAGE: `${API_BASE_URL}/api/storage`,
 };

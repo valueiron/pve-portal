@@ -10,4 +10,8 @@ export default defineConfig({
       transformMixedEsModules: true,
     },
   },
+  test: {
+    environment: 'node',
+    globals: true,
+  },
 })
