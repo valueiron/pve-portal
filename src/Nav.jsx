@@ -4,6 +4,7 @@ import {
   FaServer,
   FaHdd,
   FaNetworkWired,
+  FaFlask,
   FaBars,
   FaChevronLeft,
   FaChevronRight,
@@ -49,6 +50,7 @@ let Nav = () => {
         { name: "Networking", icon: FaNetworkWired, path: "/networking" },
         { name: "Kubernetes", icon: SiKubernetes, path: "/kubernetes" },
         { name: "Docker", icon: SiDocker, path: "/docker" },
+        { name: "Labs", icon: FaFlask, path: "/labs" },
     ];
 
     return (
