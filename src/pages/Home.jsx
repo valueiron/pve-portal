@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import {
   FaServer,
   FaHdd,
-  FaNetworkWired
+  FaNetworkWired,
+  FaFlask
 } from "react-icons/fa";
 import { SiKubernetes, SiDocker } from "react-icons/si";
 import "./Page.css";
@@ -44,6 +45,13 @@ const sections = [
         icon: SiDocker,
         path: "/docker",
         accent: "var(--text-tertiary)",
+    },
+    {
+        title: "Labs",
+        description: "Experimental features and sandbox environments",
+        icon: FaFlask,
+        path: "/labs",
+        accent: "var(--orange)",
     },
 ];
 

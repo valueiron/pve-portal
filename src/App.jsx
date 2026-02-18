@@ -8,6 +8,7 @@ import Storage from './pages/Storage'
 import Networking from './pages/Networking'
 import Kubernetes from './pages/Kubernetes'
 import Docker from './pages/Docker'
+import Labs from './pages/Labs'
 import VncConsole from './pages/VncConsole'
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
             <Route path="/networking" element={<Networking />} />
             <Route path="/kubernetes" element={<Kubernetes />} />
             <Route path="/docker" element={<Docker />} />
+            <Route path="/labs" element={<Labs />} />
           </Routes>
         </div>
       </main>
