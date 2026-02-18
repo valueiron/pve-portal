@@ -10,6 +10,12 @@
     <title>PVE Portal</title>
   </head>
   <body>
+    <script>
+      (function() {
+        var t = localStorage.getItem('pve-theme');
+        if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      })();
+    </script>
     <div id="root"></div>
     <!-- Runtime API configuration - loaded before main app -->
     <script src="/config.js"></script>

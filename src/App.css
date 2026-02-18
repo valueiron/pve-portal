@@ -31,6 +31,11 @@
   min-height: 100%;
 }
 
+/* Light theme: white content area so grey cards contrast clearly */
+[data-theme="light"] .app-main {
+  background: #ffffff;
+}
+
 /* Adjust main content when nav is collapsed */
 .nav-collapsed ~ .app-main {
   margin-left: var(--nav-collapsed-width);

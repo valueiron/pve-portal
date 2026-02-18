@@ -162,7 +162,7 @@ const VirtualMachines = () => {
     };
 
     const renderTags = (tags) => {
-        if (!tags || tags.length === 0) return <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>—</span>;
+        if (!tags || tags.length === 0) return <span style={{ color: "var(--text-tertiary)" }}>—</span>;
         
         return (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center" }}>
@@ -282,7 +282,7 @@ const VirtualMachines = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500"
                             }}>
@@ -322,7 +322,7 @@ const VirtualMachines = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500"
                             }}>
@@ -368,7 +368,7 @@ const VirtualMachines = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500",
                                 height: "1.5rem"
@@ -409,7 +409,7 @@ const VirtualMachines = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500",
                                 height: "1.5rem"
@@ -452,7 +452,7 @@ const VirtualMachines = () => {
                     
                     {(searchQuery || typeFilter !== "all") && (
                         <div style={{ 
-                            color: "rgba(255, 255, 255, 0.7)", 
+                            color: "var(--text-secondary)", 
                             fontSize: "0.9rem",
                             marginTop: "0.5rem"
                         }}>
@@ -524,15 +524,15 @@ const VirtualMachines = () => {
                                                     }}
                                                 />
                                             </div>
-                                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                                 <strong>VM ID:</strong> {vm.vmid}
                                             </p>
-                                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                                 <strong>{nodeLabel}:</strong> {vm.node}
                                             </p>
                                             {vm.tags && vm.tags.length > 0 && (
                                                 <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
-                                                    <strong style={{ color: "rgba(255, 255, 255, 0.87)", marginRight: "0.25rem" }}>Tags:</strong>
+                                                    <strong style={{ color: "var(--text-primary)", marginRight: "0.25rem" }}>Tags:</strong>
                                                     {vm.tags.map((tag, index) => {
                                                         // Handle different tag formats: Proxmox tags are strings, Azure/AWS tags are objects
                                                         let tagDisplay = '';
@@ -667,30 +667,30 @@ const VirtualMachines = () => {
                                     marginTop: "1rem"
                                 }}>
                                     <div>
-                                        <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                        <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                             <strong>CPU:</strong> {(vm.cpu * 100).toFixed(1)}%
                                         </p>
                                     </div>
                                     <div>
-                                        <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                        <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                             <strong>Memory:</strong> {formatBytes(vm.mem)} / {formatBytes(vm.maxmem)}
                                         </p>
                                     </div>
                                     <div>
-                                        <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                        <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                             <strong>Disk:</strong> {formatBytes(vm.disk)} / {formatBytes(vm.maxdisk)}
                                         </p>
                                     </div>
                                     {vm.uptime > 0 && (
                                         <div>
-                                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                                 <strong>Uptime:</strong> {formatUptime(vm.uptime)}
                                             </p>
                                         </div>
                                     )}
                                     {isProxmox && vm.ip_addresses && vm.ip_addresses.length > 0 && (
                                         <div>
-                                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                                 <strong>IP Address{vm.ip_addresses.length > 1 ? 'es' : ''}:</strong> {vm.ip_addresses.join(', ')}
                                             </p>
                                         </div>

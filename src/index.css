@@ -76,6 +76,53 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* === Gilded Slate — Light Theme === */
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surfaces — warm grey, balanced contrast */
+  --bg-base: #dbd6cf;
+  --bg-surface-1: #e4dfd8;
+  --bg-surface-2: #ece8e1;
+  --bg-surface-3: #d2cdc6;
+  --bg-elevated: #e8e3dc;
+
+  /* Borders — warm taupe */
+  --border-subtle: rgba(80, 65, 45, 0.10);
+  --border-default: rgba(80, 65, 45, 0.18);
+  --border-strong: rgba(80, 65, 45, 0.32);
+
+  /* Accent — Gold (replaces Cyan) */
+  --accent: #b5860d;
+  --accent-hover: #9a700b;
+  --accent-muted: rgba(181, 134, 13, 0.1);
+  --accent-glow: rgba(181, 134, 13, 0.2);
+
+  /* Accent — Amber */
+  --amber: #c07900;
+  --amber-muted: rgba(192, 121, 0, 0.1);
+
+  /* Status — adjusted for light bg contrast */
+  --green: #16a34a;
+  --green-muted: rgba(22, 163, 74, 0.1);
+  --red: #dc2626;
+  --red-muted: rgba(220, 38, 38, 0.1);
+  --orange: #ea580c;
+  --orange-muted: rgba(234, 88, 12, 0.1);
+
+  /* Text — warm dark tones */
+  --text-primary: #1c1917;
+  --text-secondary: #57534e;
+  --text-tertiary: #a8a29e;
+  --text-inverse: #faf8f5;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.11), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.13), 0 4px 8px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 20px var(--accent-glow);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -95,6 +142,8 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background-color: var(--bg-base);
+  transition: background-color var(--duration-normal) var(--ease-out),
+              color var(--duration-normal) var(--ease-out);
 }
 
 h1, h2, h3, h4, h5, h6 {
