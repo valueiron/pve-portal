@@ -137,7 +137,7 @@ const Networking = () => {
     };
 
     const renderTags = (tags) => {
-        if (!tags || tags.length === 0) return <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>—</span>;
+        if (!tags || tags.length === 0) return <span style={{ color: "var(--text-tertiary)" }}>—</span>;
         
         return (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center" }}>
@@ -227,7 +227,7 @@ const Networking = () => {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
                     <div>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                            <h2 style={{ margin: 0, color: "rgba(255, 255, 255, 0.87)" }}>
+                            <h2 style={{ margin: 0, color: "var(--text-primary)" }}>
                                 {resource.displayName || resource.id}
                             </h2>
                             <img 
@@ -240,30 +240,30 @@ const Networking = () => {
                                 }}
                             />
                         </div>
-                        <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                        <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                             <strong>Type:</strong> {getResourceTypeLabel(resource.resource_type)}
                         </p>
-                        <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                        <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                             <strong>ID:</strong> {resource.id}
                         </p>
                         {resource.location && (
-                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                 <strong>Location:</strong> {resource.location}
                             </p>
                         )}
                         {resource.region && (
-                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                 <strong>Region:</strong> {resource.region}
                             </p>
                         )}
                         {resource.resource_group && (
-                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                 <strong>Resource Group:</strong> {resource.resource_group}
                             </p>
                         )}
                         {resource.tags && resource.tags.length > 0 && (
                             <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
-                                <strong style={{ color: "rgba(255, 255, 255, 0.87)", marginRight: "0.25rem" }}>Tags:</strong>
+                                <strong style={{ color: "var(--text-primary)", marginRight: "0.25rem" }}>Tags:</strong>
                                 {resource.tags.map((tag, index) => {
                                     // Handle different tag formats: Proxmox tags are strings, Azure/AWS tags are objects
                                     let tagDisplay = '';
@@ -319,7 +319,7 @@ const Networking = () => {
                     {/* Azure VNet specific fields */}
                     {resource.resource_type === 'vnet' && resource.address_space && (
                         <div>
-                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                 <strong>Address Space:</strong> {resource.address_space.join(', ')}
                             </p>
                         </div>
@@ -330,42 +330,42 @@ const Networking = () => {
                         <>
                             {resource.address_prefix && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>CIDR:</strong> {resource.address_prefix}
                                     </p>
                                 </div>
                             )}
                             {resource.cidr_block && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>CIDR:</strong> {resource.cidr_block}
                                     </p>
                                 </div>
                             )}
                             {resource.vnet_name && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>VNet:</strong> {resource.vnet_name}
                                     </p>
                                 </div>
                             )}
                             {resource.vpc_id && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>VPC:</strong> {resource.vpc_id}
                                     </p>
                                 </div>
                             )}
                             {resource.availability_zone && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>AZ:</strong> {resource.availability_zone}
                                     </p>
                                 </div>
                             )}
                             {resource.state && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>State:</strong> {resource.state}
                                     </p>
                                 </div>
@@ -376,7 +376,7 @@ const Networking = () => {
                     {/* NSG specific fields */}
                     {resource.resource_type === 'nsg' && resource.location && (
                         <div>
-                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                 <strong>Location:</strong> {resource.location}
                             </p>
                         </div>
@@ -387,14 +387,14 @@ const Networking = () => {
                         <>
                             {resource.ip_address && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>IP Address:</strong> {resource.ip_address}
                                     </p>
                                 </div>
                             )}
                             {resource.allocation_method && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Allocation:</strong> {resource.allocation_method}
                                     </p>
                                 </div>
@@ -407,14 +407,14 @@ const Networking = () => {
                         <>
                             {resource.cidr_block && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>CIDR:</strong> {resource.cidr_block}
                                     </p>
                                 </div>
                             )}
                             {resource.state && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>State:</strong> {resource.state}
                                     </p>
                                 </div>
@@ -427,14 +427,14 @@ const Networking = () => {
                         <>
                             {resource.vpc_id && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>VPC:</strong> {resource.vpc_id}
                                     </p>
                                 </div>
                             )}
                             {resource.description && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Description:</strong> {resource.description}
                                     </p>
                                 </div>
@@ -447,28 +447,28 @@ const Networking = () => {
                         <>
                             {resource.public_ip && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Public IP:</strong> {resource.public_ip}
                                     </p>
                                 </div>
                             )}
                             {resource.private_ip && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Private IP:</strong> {resource.private_ip}
                                     </p>
                                 </div>
                             )}
                             {resource.instance_id && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Instance:</strong> {resource.instance_id}
                                     </p>
                                 </div>
                             )}
                             {resource.domain && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Domain:</strong> {resource.domain}
                                     </p>
                                 </div>
@@ -504,7 +504,7 @@ const Networking = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500"
                             }}>
@@ -539,7 +539,7 @@ const Networking = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500"
                             }}>
@@ -583,7 +583,7 @@ const Networking = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500"
                             }}>
@@ -629,7 +629,7 @@ const Networking = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500",
                                 height: "1.5rem"
@@ -670,7 +670,7 @@ const Networking = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500",
                                 height: "1.5rem"
@@ -713,7 +713,7 @@ const Networking = () => {
                     
                     {(searchQuery || typeFilter !== "all" || resourceTypeFilter !== "all") && (
                         <div style={{ 
-                            color: "rgba(255, 255, 255, 0.7)", 
+                            color: "var(--text-secondary)", 
                             fontSize: "0.9rem",
                             marginTop: "0.5rem"
                         }}>

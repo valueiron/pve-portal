@@ -11,6 +11,8 @@
   border-bottom: 1px solid var(--border-subtle);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  transition: background-color var(--duration-normal) var(--ease-out),
+              border-color var(--duration-normal) var(--ease-out);
 }
 
 /* Subtle accent line at top */
@@ -23,6 +25,7 @@
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   opacity: 0.4;
+  transition: opacity var(--duration-normal) var(--ease-out);
 }
 
 .header-content {
@@ -71,10 +74,83 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(6, 182, 212, 0.15);
+  border: 1px solid var(--accent-muted);
 }
 
-/* Account dropdown */
+/* Right-side controls group */
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ── Theme toggle ── */
+.header-theme-toggle {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.header-theme-toggle:hover {
+  background-color: var(--accent-muted);
+}
+
+/* Pill track */
+.theme-toggle-track {
+  display: flex;
+  align-items: center;
+  width: 52px;
+  height: 28px;
+  background-color: var(--bg-surface-3);
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  padding: 4px;
+  pointer-events: none;
+  transition: background-color var(--duration-normal) var(--ease-out),
+              border-color var(--duration-normal) var(--ease-out);
+}
+
+[data-theme="light"] .theme-toggle-track {
+  background-color: var(--accent-muted);
+  border-color: var(--accent);
+}
+
+/* Sliding thumb
+   Dark mode: thumb sits on the left (translateX 0)
+   Light mode: thumb slides to the right (translateX 24px)
+   Track inner width = 52px - 8px padding = 44px
+   Thumb width = 20px → travel = 44 - 20 = 24px              */
+.theme-toggle-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  color: #fff;
+  transform: translateX(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: transform var(--duration-normal) var(--ease-out),
+              background-color var(--duration-normal) var(--ease-out);
+}
+
+[data-theme="light"] .theme-toggle-thumb {
+  transform: translateX(24px);
+}
+
+.theme-toggle-icon {
+  display: block;
+  font-size: 10px;
+}
+
+/* ── Account dropdown ── */
 .header-account {
   position: relative;
 }
@@ -95,7 +171,7 @@
 .header-account-button:hover {
   color: var(--accent);
   background-color: var(--accent-muted);
-  border-color: rgba(6, 182, 212, 0.15);
+  border-color: var(--accent-muted);
 }
 
 .header-account-icon {

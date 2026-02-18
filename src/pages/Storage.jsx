@@ -158,7 +158,7 @@ const Storage = () => {
     };
 
     const renderTags = (tags) => {
-        if (!tags || tags.length === 0) return <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>—</span>;
+        if (!tags || tags.length === 0) return <span style={{ color: "var(--text-tertiary)" }}>—</span>;
         
         return (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center" }}>
@@ -219,7 +219,7 @@ const Storage = () => {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
                     <div>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                            <h2 style={{ margin: 0, color: "rgba(255, 255, 255, 0.87)" }}>
+                            <h2 style={{ margin: 0, color: "var(--text-primary)" }}>
                                 {resource.displayName || resource.id}
                             </h2>
                             <img 
@@ -232,35 +232,35 @@ const Storage = () => {
                                 }}
                             />
                         </div>
-                        <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                        <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                             <strong>Type:</strong> {getResourceTypeLabel(resource.resource_type)}
                         </p>
-                        <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                        <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                             <strong>ID:</strong> {resource.id}
                         </p>
                         {resource.location && (
-                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                 <strong>Location:</strong> {resource.location}
                             </p>
                         )}
                         {resource.region && (
-                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                 <strong>Region:</strong> {resource.region}
                             </p>
                         )}
                         {resource.resource_group && (
-                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                 <strong>Resource Group:</strong> {resource.resource_group}
                             </p>
                         )}
                         {resource.node && isProxmox && (
-                            <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                            <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                 <strong>Node:</strong> {resource.node}
                             </p>
                         )}
                         {resource.tags && resource.tags.length > 0 && (
                             <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
-                                <strong style={{ color: "rgba(255, 255, 255, 0.87)", marginRight: "0.25rem" }}>Tags:</strong>
+                                <strong style={{ color: "var(--text-primary)", marginRight: "0.25rem" }}>Tags:</strong>
                                 {resource.tags.map((tag, index) => {
                                     // Handle different tag formats: Proxmox tags are strings, Azure/AWS tags are objects
                                     let tagDisplay = '';
@@ -318,21 +318,21 @@ const Storage = () => {
                         <>
                             {resource.kind && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Kind:</strong> {resource.kind}
                                     </p>
                                 </div>
                             )}
                             {resource.sku && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>SKU:</strong> {resource.sku}
                                     </p>
                                 </div>
                             )}
                             {resource.primary_blob_endpoint && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Blob Endpoint:</strong> {resource.primary_blob_endpoint}
                                     </p>
                                 </div>
@@ -345,21 +345,21 @@ const Storage = () => {
                         <>
                             {resource.storage_account && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Storage Account:</strong> {resource.storage_account}
                                     </p>
                                 </div>
                             )}
                             {resource.public_access && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Public Access:</strong> {resource.public_access}
                                     </p>
                                 </div>
                             )}
                             {resource.last_modified && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Last Modified:</strong> {new Date(resource.last_modified).toLocaleString()}
                                     </p>
                                 </div>
@@ -372,21 +372,21 @@ const Storage = () => {
                         <>
                             {resource.creation_date && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Created:</strong> {new Date(resource.creation_date).toLocaleString()}
                                     </p>
                                 </div>
                             )}
                             {resource.size_bytes !== undefined && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Size:</strong> {formatBytes(resource.size_bytes)}
                                     </p>
                                 </div>
                             )}
                             {resource.object_count !== undefined && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Objects:</strong> {resource.object_count.toLocaleString()}
                                     </p>
                                 </div>
@@ -399,49 +399,49 @@ const Storage = () => {
                         <>
                             {resource.storage_type && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Storage Type:</strong> {resource.storage_type}
                                     </p>
                                 </div>
                             )}
                             {resource.content && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Content:</strong> {resource.content}
                                     </p>
                                 </div>
                             )}
                             {resource.total_bytes !== undefined && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Total:</strong> {formatBytes(resource.total_bytes)}
                                     </p>
                                 </div>
                             )}
                             {resource.used_bytes !== undefined && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Used:</strong> {formatBytes(resource.used_bytes)}
                                     </p>
                                 </div>
                             )}
                             {resource.avail_bytes !== undefined && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Available:</strong> {formatBytes(resource.avail_bytes)}
                                     </p>
                                 </div>
                             )}
                             {resource.active !== undefined && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Active:</strong> {resource.active ? 'Yes' : 'No'}
                                     </p>
                                 </div>
                             )}
                             {resource.enabled !== undefined && (
                                 <div>
-                                    <p style={{ margin: "0.25rem 0", color: "rgba(255, 255, 255, 0.87)" }}>
+                                    <p style={{ margin: "0.25rem 0", color: "var(--text-primary)" }}>
                                         <strong>Enabled:</strong> {resource.enabled ? 'Yes' : 'No'}
                                     </p>
                                 </div>
@@ -477,7 +477,7 @@ const Storage = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500"
                             }}>
@@ -513,7 +513,7 @@ const Storage = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500"
                             }}>
@@ -554,7 +554,7 @@ const Storage = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500"
                             }}>
@@ -600,7 +600,7 @@ const Storage = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500",
                                 height: "1.5rem"
@@ -641,7 +641,7 @@ const Storage = () => {
                             <label style={{ 
                                 display: "block", 
                                 marginBottom: "0.5rem", 
-                                color: "rgba(255, 255, 255, 0.87)", 
+                                color: "var(--text-primary)", 
                                 fontSize: "0.9rem",
                                 fontWeight: "500",
                                 height: "1.5rem"
@@ -684,7 +684,7 @@ const Storage = () => {
                     
                     {(searchQuery || typeFilter !== "all" || resourceTypeFilter !== "all") && (
                         <div style={{ 
-                            color: "rgba(255, 255, 255, 0.7)", 
+                            color: "var(--text-secondary)", 
                             fontSize: "0.9rem",
                             marginTop: "0.5rem"
                         }}>
