@@ -75,6 +75,28 @@ export const API_ENDPOINTS = {
   DOCKER_NETWORK_INSPECT: (id) => `${API_BASE_URL}/api/docker/networks/${encodeURIComponent(id)}`,
   DOCKER_SYSTEM_INFO: `${API_BASE_URL}/api/docker/system/info`,
   DOCKER_SYSTEM_DISK: `${API_BASE_URL}/api/docker/system/disk`,
+
+  // Kubernetes endpoints
+  K8S_PODS: `${API_BASE_URL}/api/k8s/pods`,
+  K8S_POD: (ns, name) => `${API_BASE_URL}/api/k8s/pods/${ns}/${name}`,
+  K8S_POD_LOGS: (ns, name) => `${API_BASE_URL}/api/k8s/pods/${ns}/${name}/logs`,
+  K8S_POD_METRICS: (ns, name) => `${API_BASE_URL}/api/k8s/pods/${ns}/${name}/metrics`,
+  K8S_POD_RESTART: (ns, name) => `${API_BASE_URL}/api/k8s/pods/${ns}/${name}/restart`,
+  K8S_DEPLOYMENTS: `${API_BASE_URL}/api/k8s/deployments`,
+  K8S_DEPLOYMENT: (ns, name) => `${API_BASE_URL}/api/k8s/deployments/${ns}/${name}`,
+  K8S_DEPLOYMENT_SCALE: (ns, name) => `${API_BASE_URL}/api/k8s/deployments/${ns}/${name}/scale`,
+  K8S_DEPLOYMENT_RESTART: (ns, name) => `${API_BASE_URL}/api/k8s/deployments/${ns}/${name}/restart`,
+  K8S_SERVICES: `${API_BASE_URL}/api/k8s/services`,
+  K8S_SERVICE: (ns, name) => `${API_BASE_URL}/api/k8s/services/${ns}/${name}`,
+  K8S_NAMESPACES: `${API_BASE_URL}/api/k8s/namespaces`,
+  K8S_NAMESPACE: (name) => `${API_BASE_URL}/api/k8s/namespaces/${name}`,
+  K8S_CONFIGMAPS: `${API_BASE_URL}/api/k8s/configmaps`,
+  K8S_CONFIGMAP: (ns, name) => `${API_BASE_URL}/api/k8s/configmaps/${ns}/${name}`,
+  K8S_PVCS: `${API_BASE_URL}/api/k8s/pvcs`,
+  K8S_PVC: (ns, name) => `${API_BASE_URL}/api/k8s/pvcs/${ns}/${name}`,
+  K8S_NODES: `${API_BASE_URL}/api/k8s/nodes`,
+  K8S_NODE: (name) => `${API_BASE_URL}/api/k8s/nodes/${name}`,
+  K8S_SYSTEM_INFO: `${API_BASE_URL}/api/k8s/system/info`,
 };
 
 export default API_BASE_URL;
