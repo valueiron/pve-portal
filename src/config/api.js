@@ -60,6 +60,21 @@ export const API_ENDPOINTS = {
   NODES: `${API_BASE_URL}/api/nodes`,
   NETWORKING: `${API_BASE_URL}/api/networking`,
   STORAGE: `${API_BASE_URL}/api/storage`,
+  DOCKER_CONTAINERS: `${API_BASE_URL}/api/docker/containers`,
+  DOCKER_CONTAINER: (id) => `${API_BASE_URL}/api/docker/containers/${id}`,
+  DOCKER_CONTAINER_START: (id) => `${API_BASE_URL}/api/docker/containers/${id}/start`,
+  DOCKER_CONTAINER_STOP: (id) => `${API_BASE_URL}/api/docker/containers/${id}/stop`,
+  DOCKER_CONTAINER_RESTART: (id) => `${API_BASE_URL}/api/docker/containers/${id}/restart`,
+  DOCKER_CONTAINER_LOGS: (id) => `${API_BASE_URL}/api/docker/containers/${id}/logs`,
+  DOCKER_CONTAINER_METRICS: (id) => `${API_BASE_URL}/api/docker/containers/${id}/metrics`,
+  DOCKER_IMAGES: `${API_BASE_URL}/api/docker/images`,
+  DOCKER_IMAGE_INSPECT: (id) => `${API_BASE_URL}/api/docker/images/${encodeURIComponent(id)}`,
+  DOCKER_VOLUMES: `${API_BASE_URL}/api/docker/volumes`,
+  DOCKER_VOLUME_INSPECT: (name) => `${API_BASE_URL}/api/docker/volumes/${encodeURIComponent(name)}`,
+  DOCKER_NETWORKS: `${API_BASE_URL}/api/docker/networks`,
+  DOCKER_NETWORK_INSPECT: (id) => `${API_BASE_URL}/api/docker/networks/${encodeURIComponent(id)}`,
+  DOCKER_SYSTEM_INFO: `${API_BASE_URL}/api/docker/system/info`,
+  DOCKER_SYSTEM_DISK: `${API_BASE_URL}/api/docker/system/disk`,
 };
 
 export default API_BASE_URL;
