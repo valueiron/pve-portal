@@ -1004,13 +1004,22 @@ const SystemTab = () => {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 
+const tabColors = {
+    Pods:        "#326ce5",
+    Deployments: "#ff9800",
+    Services:    "#9c27b0",
+    Namespaces:  "#00bcd4",
+    Nodes:       "#4caf50",
+    System:      "#607d8b",
+};
+
 const tabIcons = {
-    Pods:        <FaCube />,
-    Deployments: <FaLayerGroup />,
-    Services:    <FaNetworkWired />,
-    Namespaces:  <FaDatabase />,
-    Nodes:       <FaServer />,
-    System:      <FaInfoCircle />,
+    Pods:        <FaCube        style={{ color: tabColors.Pods }} />,
+    Deployments: <FaLayerGroup  style={{ color: tabColors.Deployments }} />,
+    Services:    <FaNetworkWired style={{ color: tabColors.Services }} />,
+    Namespaces:  <FaDatabase    style={{ color: tabColors.Namespaces }} />,
+    Nodes:       <FaServer      style={{ color: tabColors.Nodes }} />,
+    System:      <FaInfoCircle  style={{ color: tabColors.System }} />,
 };
 
 const Kubernetes = () => {
@@ -1040,11 +1049,12 @@ const Kubernetes = () => {
                 {TABS.map(t => (
                     <button key={t} onClick={() => setTab(t)} style={{
                         display: "flex", alignItems: "center", gap: "0.4rem",
-                        padding: "0.55rem 1rem", border: "none", background: "none",
-                        cursor: "pointer", fontSize: "0.85rem", fontWeight: "600",
+                        padding: "0.6rem 1.25rem", border: "none", background: "none",
+                        cursor: "pointer", fontSize: "0.95rem",
+                        fontWeight: tab === t ? "600" : "400",
                         color: tab === t ? "var(--text-primary)" : "var(--text-secondary)",
                         borderBottom: tab === t
-                            ? "2px solid var(--accent, #2196f3)"
+                            ? `2px solid ${tabColors[t]}`
                             : "2px solid transparent",
                         marginBottom: "-1px",
                         transition: "color 0.15s, border-color 0.15s",

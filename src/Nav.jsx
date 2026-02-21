@@ -8,7 +8,8 @@ import {
   FaBars,
   FaChevronLeft,
   FaChevronRight,
-  FaTimes
+  FaTimes,
+  FaSitemap
 } from "react-icons/fa";
 import { SiKubernetes, SiDocker } from "react-icons/si";
 import "./Nav.css";
@@ -51,6 +52,7 @@ let Nav = () => {
         { name: "Kubernetes", icon: SiKubernetes, path: "/kubernetes" },
         { name: "Docker", icon: SiDocker, path: "/docker" },
         { name: "Labs", icon: FaFlask, path: "/labs" },
+        { name: "VyOS", icon: FaSitemap, path: "/vyos" },
     ];
 
     return (
