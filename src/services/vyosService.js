@@ -218,3 +218,31 @@ export const deleteAddressGroup = async (deviceId, group) => {
   clearCache(API_ENDPOINTS.VYOS_ADDRESS_GROUPS(deviceId));
   return result;
 };
+
+// ── NAT Rules ──────────────────────────────────────────────────────────────
+export const fetchNATRules = (deviceId, natType, forceRefresh = false) =>
+  cachedFetch(API_ENDPOINTS.VYOS_NAT_RULES(deviceId, natType), forceRefresh);
+
+export const createNATRule = async (deviceId, natType, data) => {
+  const result = await jsonFetch(API_ENDPOINTS.VYOS_NAT_RULES(deviceId, natType), {
+    method: 'POST', body: JSON.stringify(data),
+  });
+  clearCache(API_ENDPOINTS.VYOS_NAT_RULES(deviceId, natType));
+  return result;
+};
+
+export const updateNATRule = async (deviceId, natType, ruleId, data) => {
+  const result = await jsonFetch(API_ENDPOINTS.VYOS_NAT_RULE(deviceId, natType, ruleId), {
+    method: 'PUT', body: JSON.stringify(data),
+  });
+  clearCache(API_ENDPOINTS.VYOS_NAT_RULES(deviceId, natType));
+  return result;
+};
+
+export const deleteNATRule = async (deviceId, natType, ruleId) => {
+  const result = await jsonFetch(API_ENDPOINTS.VYOS_NAT_RULE(deviceId, natType, ruleId), {
+    method: 'DELETE',
+  });
+  clearCache(API_ENDPOINTS.VYOS_NAT_RULES(deviceId, natType));
+  return result;
+};

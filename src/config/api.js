@@ -106,6 +106,8 @@ export const API_ENDPOINTS = {
   VYOS_FIREWALL_POLICY_ENABLE: (deviceId, policy) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}/enable`,
   VYOS_FIREWALL_RULE_DISABLE: (deviceId, policy, ruleId) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}/rules/${ruleId}/disable`,
   VYOS_FIREWALL_RULE_ENABLE: (deviceId, policy, ruleId) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}/rules/${ruleId}/enable`,
+  VYOS_NAT_RULES: (deviceId, natType) => `${API_BASE_URL}/api/vyos/${deviceId}/nat/${natType}/rules`,
+  VYOS_NAT_RULE: (deviceId, natType, ruleId) => `${API_BASE_URL}/api/vyos/${deviceId}/nat/${natType}/rules/${ruleId}`,
 };
 
 export default API_BASE_URL;
