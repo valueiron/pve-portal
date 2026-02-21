@@ -4,6 +4,7 @@ import {
   FaNetworkWired, FaLayerGroup, FaTag, FaShieldAlt, FaObjectGroup,
   FaSyncAlt, FaPlus, FaEdit, FaTrash, FaTimes, FaTh, FaTable,
   FaChevronDown, FaChevronUp, FaSitemap, FaToggleOn, FaToggleOff,
+  FaExchangeAlt,
 } from "react-icons/fa";
 import "./Page.css";
 import {
@@ -14,6 +15,7 @@ import {
   fetchPolicies, createPolicy, updatePolicy, deletePolicy, addRule, deleteRule,
   disablePolicy, enablePolicy, disableRule, enableRule,
   fetchAddressGroups, createAddressGroup, updateAddressGroup, deleteAddressGroup,
+  fetchNATRules, createNATRule, updateNATRule, deleteNATRule,
 } from "../services/vyosService";
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -160,6 +162,7 @@ const TABS = [
   { id: "vlans",          label: "VLANs",         icon: FaTag,          color: "#ff9800" },
   { id: "policies",       label: "Firewall",      icon: FaShieldAlt,    color: "#f44336" },
   { id: "address_groups", label: "Address Groups", icon: FaObjectGroup, color: "#4caf50" },
+  { id: "nat",            label: "NAT",           icon: FaExchangeAlt,  color: "#ff5722" },
 ];
 
 const TabBar = ({ active, onChange }) => (
@@ -1090,6 +1093,253 @@ const AddressGroupsTab = ({ deviceId }) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
+// NAT TAB
+// ══════════════════════════════════════════════════════════════════════════
+
+const NAT_COLOR = "#ff5722";
+const NAT_PROTOCOLS = ["", "tcp", "udp", "tcp_udp", "icmp", "all"];
+
+const emptyNATForm = () => ({
+  rule_id: "",
+  description: "",
+  protocol: "",
+  outbound_interface: "",
+  inbound_interface: "",
+  source_address: "",
+  source_port: "",
+  destination_address: "",
+  destination_port: "",
+  translation_address: "",
+  translation_port: "",
+});
+
+const NATTab = ({ deviceId }) => {
+  const [natType, setNatType] = useState("source");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState(emptyNATForm());
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const load = useCallback(async (force = false) => {
+    try {
+      force ? setRefreshing(true) : setLoading(true);
+      setError(null);
+      const data = await fetchNATRules(deviceId, natType, force);
+      setItems(Array.isArray(data) ? data : []);
+    } catch (e) { setError(e.message); } finally { setLoading(false); setRefreshing(false); }
+  }, [deviceId, natType]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const switchNatType = (type) => {
+    setNatType(type);
+    setItems([]);
+    setLoading(true);
+    setError(null);
+  };
+
+  const openCreate = () => { setForm(emptyNATForm()); setFormError(""); setModal("create"); };
+  const openEdit = (item) => {
+    setForm({
+      rule_id: String(item.rule_id),
+      description: item.description || "",
+      protocol: item.protocol || "",
+      outbound_interface: item.outbound_interface || "",
+      inbound_interface: item.inbound_interface || "",
+      source_address: item.source_address || "",
+      source_port: item.source_port || "",
+      destination_address: item.destination_address || "",
+      destination_port: item.destination_port || "",
+      translation_address: item.translation_address || "",
+      translation_port: item.translation_port || "",
+    });
+    setFormError("");
+    setModal(item);
+  };
+
+  const handleSubmit = async () => {
+    setFormError("");
+    if (!form.rule_id) { setFormError("Rule ID is required"); return; }
+    if (!form.translation_address) { setFormError("Translation address is required"); return; }
+    setSubmitting(true);
+    try {
+      const payload = {
+        description: form.description,
+        protocol: form.protocol,
+        outbound_interface: form.outbound_interface,
+        inbound_interface: form.inbound_interface,
+        source_address: form.source_address,
+        source_port: form.source_port,
+        destination_address: form.destination_address,
+        destination_port: form.destination_port,
+        translation_address: form.translation_address,
+        translation_port: form.translation_port,
+      };
+      if (modal === "create") {
+        await createNATRule(deviceId, natType, { rule_id: parseInt(form.rule_id, 10), ...payload });
+      } else {
+        await updateNATRule(deviceId, natType, modal.rule_id, payload);
+      }
+      setModal(null);
+      load(true);
+    } catch (e) { setFormError(e.message); } finally { setSubmitting(false); }
+  };
+
+  const handleDelete = async (item) => {
+    if (!window.confirm(`Delete ${natType} NAT rule ${item.rule_id}?`)) return;
+    try { await deleteNATRule(deviceId, natType, item.rule_id); load(true); } catch (e) { alert(e.message); }
+  };
+
+  const ifaceLabel = natType === "source" ? "Outbound Interface" : "Inbound Interface";
+  const ifaceKey = natType === "source" ? "outbound_interface" : "inbound_interface";
+
+  return (
+    <>
+      {/* Sub-type switcher */}
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem" }}>
+        {[
+          { key: "source", label: "Source NAT (SNAT / Masquerade)" },
+          { key: "destination", label: "Destination NAT (DNAT / Port Forward)" },
+        ].map(({ key, label }) => (
+          <button key={key} onClick={() => switchNatType(key)} style={{
+            padding: "0.45rem 1.1rem", borderRadius: "8px", cursor: "pointer",
+            fontWeight: 700, fontSize: "0.875rem",
+            background: natType === key ? NAT_COLOR : "transparent",
+            color: natType === key ? "#fff" : "var(--text-secondary)",
+            border: `1px solid ${natType === key ? NAT_COLOR : "#6b6b6b"}`,
+            transition: "all 0.15s",
+          }}>{label}</button>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+        <button onClick={openCreate} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.55rem 1rem", borderRadius: "8px", border: "none", background: "#4caf50", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem" }}>
+          <FaPlus />Add Rule
+        </button>
+        <button onClick={() => load(true)} disabled={refreshing} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.55rem 0.9rem", borderRadius: "8px", border: "none", background: refreshing ? "#6b6b6b" : VYOS_TEAL, color: "#fff", cursor: refreshing ? "not-allowed" : "pointer", fontWeight: 600, fontSize: "0.875rem", opacity: refreshing ? 0.6 : 1 }}>
+          <FaSyncAlt style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />{refreshing ? "Refreshing…" : "Refresh"}
+        </button>
+      </div>
+
+      {loading ? <Loading /> : error ? <ErrorMsg msg={error} /> : items.length === 0 ? (
+        <Empty label={`${natType} NAT rules`} />
+      ) : (
+        <div className="page-table-container">
+          <table className="page-table">
+            <thead>
+              <tr>
+                <th>Rule</th>
+                <th>{natType === "source" ? "Outbound Iface" : "Inbound Iface"}</th>
+                <th>Protocol</th>
+                <th>Source</th>
+                <th>Destination</th>
+                <th>Translation</th>
+                <th>Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...items].sort((a, b) => a.rule_id - b.rule_id).map(item => (
+                <tr key={item.rule_id} style={{ opacity: item.disabled ? 0.5 : 1 }}>
+                  <td style={{ fontFamily: "monospace", fontWeight: 700 }}>{item.rule_id}</td>
+                  <td style={{ fontFamily: "monospace" }}>
+                    {(natType === "source" ? item.outbound_interface : item.inbound_interface) || <span style={{ color: "var(--text-secondary)" }}>—</span>}
+                  </td>
+                  <td>{item.protocol ? <Badge label={item.protocol} color="#9c27b0" /> : <span style={{ color: "var(--text-secondary)" }}>—</span>}</td>
+                  <td>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                      {item.source_address && <AddrTag addr={item.source_address} />}
+                      {item.source_port && <span style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "var(--text-secondary)" }}>port {item.source_port}</span>}
+                      {!item.source_address && !item.source_port && <span style={{ color: "var(--text-secondary)" }}>any</span>}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                      {item.destination_address && <AddrTag addr={item.destination_address} />}
+                      {item.destination_port && <span style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "var(--text-secondary)" }}>port {item.destination_port}</span>}
+                      {!item.destination_address && !item.destination_port && <span style={{ color: "var(--text-secondary)" }}>any</span>}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                      {item.translation_address && (
+                        item.translation_address === "masquerade"
+                          ? <Badge label="masquerade" color={NAT_COLOR} />
+                          : <AddrTag addr={item.translation_address} />
+                      )}
+                      {item.translation_port && <span style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "var(--text-secondary)" }}>port {item.translation_port}</span>}
+                    </div>
+                  </td>
+                  <td style={{ color: "var(--text-secondary)" }}>{item.description || "—"}</td>
+                  <td>
+                    <div style={{ display: "flex", gap: "0.4rem" }}>
+                      <Btn icon={FaEdit} label="Edit" color={VYOS_TEAL} onClick={() => openEdit(item)} />
+                      <Btn icon={FaTrash} label="Delete" color="#f44336" onClick={() => handleDelete(item)} />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {modal && (
+        <Modal
+          title={modal === "create"
+            ? `Add ${natType === "source" ? "Source" : "Destination"} NAT Rule`
+            : `Edit ${natType === "source" ? "SNAT" : "DNAT"} Rule ${modal.rule_id}`}
+          onClose={() => setModal(null)}
+          onSubmit={handleSubmit}
+          submitting={submitting}
+        >
+          {formError && <p style={{ color: "#f44336", marginBottom: "0.75rem", fontWeight: 600 }}>{formError}</p>}
+          {modal === "create" && (
+            <FormField label="Rule ID *">
+              <input style={inputStyle} type="number" min="1" value={form.rule_id} onChange={e => setForm(f => ({ ...f, rule_id: e.target.value }))} placeholder="e.g. 10" required />
+            </FormField>
+          )}
+          <FormField label="Protocol">
+            <select style={inputStyle} value={form.protocol} onChange={e => setForm(f => ({ ...f, protocol: e.target.value }))}>
+              {NAT_PROTOCOLS.map(p => <option key={p} value={p}>{p || "— any —"}</option>)}
+            </select>
+          </FormField>
+          <FormField label={ifaceLabel}>
+            <input style={inputStyle} value={form[ifaceKey]} onChange={e => setForm(f => ({ ...f, [ifaceKey]: e.target.value }))} placeholder="e.g. eth0 (optional)" />
+          </FormField>
+          <FormField label="Source Address">
+            <input style={inputStyle} value={form.source_address} onChange={e => setForm(f => ({ ...f, source_address: e.target.value }))} placeholder="e.g. 192.168.1.0/24 (optional)" />
+          </FormField>
+          <FormField label="Source Port">
+            <input style={inputStyle} value={form.source_port} onChange={e => setForm(f => ({ ...f, source_port: e.target.value }))} placeholder="e.g. 1024-65535 (optional)" />
+          </FormField>
+          <FormField label="Destination Address">
+            <input style={inputStyle} value={form.destination_address} onChange={e => setForm(f => ({ ...f, destination_address: e.target.value }))} placeholder="e.g. 203.0.113.1 (optional)" />
+          </FormField>
+          <FormField label="Destination Port">
+            <input style={inputStyle} value={form.destination_port} onChange={e => setForm(f => ({ ...f, destination_port: e.target.value }))} placeholder="e.g. 80 (optional)" />
+          </FormField>
+          <FormField label={`Translation Address *${natType === "source" ? " (use 'masquerade' for dynamic SNAT)" : ""}`}>
+            <input style={inputStyle} value={form.translation_address} onChange={e => setForm(f => ({ ...f, translation_address: e.target.value }))} placeholder={natType === "source" ? "masquerade  or  203.0.113.1" : "e.g. 192.168.1.100"} required />
+          </FormField>
+          <FormField label="Translation Port">
+            <input style={inputStyle} value={form.translation_port} onChange={e => setForm(f => ({ ...f, translation_port: e.target.value }))} placeholder="e.g. 8080 (optional)" />
+          </FormField>
+          <FormField label="Description">
+            <input style={inputStyle} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Optional description" />
+          </FormField>
+        </Modal>
+      )}
+    </>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════
 // MAIN VyOS PAGE
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -1120,6 +1370,7 @@ const VyOS = () => {
       case "vlans": return <VLANsTab key={`${selectedDevice}-vlans`} deviceId={selectedDevice} />;
       case "policies": return <PoliciesTab key={`${selectedDevice}-policies`} deviceId={selectedDevice} />;
       case "address_groups": return <AddressGroupsTab key={`${selectedDevice}-ag`} deviceId={selectedDevice} />;
+      case "nat": return <NATTab key={`${selectedDevice}-nat`} deviceId={selectedDevice} />;
       default: return null;
     }
   };
@@ -1132,7 +1383,7 @@ const VyOS = () => {
         <h1 className="page-title" style={{ margin: 0 }}>VyOS Router Management</h1>
       </div>
       <p className="page-description">
-        Manage VyOS router resources — interfaces, VRFs, VLANs, firewall policies, and address groups.
+        Manage VyOS router resources — interfaces, VRFs, VLANs, firewall policies, address groups, and NAT rules.
       </p>
 
       {/* Device Selector */}
