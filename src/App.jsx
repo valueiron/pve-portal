@@ -10,6 +10,7 @@ import Kubernetes from './pages/Kubernetes'
 import Docker from './pages/Docker'
 import Labs from './pages/Labs'
 import VncConsole from './pages/VncConsole'
+import VyOS from './pages/VyOS'
 
 function App() {
   const location = useLocation();
@@ -38,6 +39,7 @@ function App() {
             <Route path="/kubernetes" element={<Kubernetes />} />
             <Route path="/docker" element={<Docker />} />
             <Route path="/labs" element={<Labs />} />
+            <Route path="/vyos" element={<VyOS />} />
           </Routes>
         </div>
       </main>

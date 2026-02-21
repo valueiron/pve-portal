@@ -1,49 +1,39 @@
 /**
  * API Configuration
  * Centralized configuration for backend API endpoints
- * 
- * Configuration priority:
- * 1. Runtime config from window.__API_BASE_URL__ (set by config.js script in Docker)
+ *
+ * All API calls go through nginx on the same origin (port 80).
+ * Nginx proxies /api/ → pve-backend:5000  and  /vnc → pve-backend:5001
+ *
+ * Override priority:
+ * 1. Runtime config from window.__API_BASE_URL__ (set by config.js in Docker)
  * 2. Build-time env var VITE_API_BASE_URL
- * 3. Auto-detect from current page URL (works for mobile/remote access)
- * 4. Default: http://localhost:5000
+ * 3. Same origin as the page (default — works for any host/IP)
  */
 
-// Get API base URL from runtime config, build-time env, or default
 const getApiBaseUrl = () => {
-  // Check for runtime configuration (set by config.js in Docker)
   if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
     return window.__API_BASE_URL__;
   }
-  
-  // Check for build-time environment variable
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
-  
-  // Auto-detect from current page URL (works for mobile/remote access)
-  // This allows the API to work when accessing via IP address or domain name
+  // Use the same origin as the page — nginx proxies /api/ to the backend
   if (typeof window !== 'undefined' && window.location) {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    // Use the same hostname as the current page, but with port 5000 for the backend
-    return `${protocol}//${hostname}:5000`;
+    return `${window.location.protocol}//${window.location.host}`;
   }
-  
-  // Default fallback
-  return 'http://localhost:5000';
+  return '';
 };
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Get WebSocket base URL for VNC proxy (port 5001)
+// WebSocket base — nginx proxies /vnc to pve-backend:5001
 const getWsBaseUrl = () => {
   if (typeof window !== 'undefined' && window.location) {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const hostname = window.location.hostname;
-    return `${wsProtocol}//${hostname}:5001`;
+    return `${wsProtocol}//${window.location.host}`;
   }
-  return 'ws://localhost:5001';
+  return 'ws://localhost';
 };
 
 const WS_BASE_URL = getWsBaseUrl();
@@ -97,6 +87,25 @@ export const API_ENDPOINTS = {
   K8S_NODES: `${API_BASE_URL}/api/k8s/nodes`,
   K8S_NODE: (name) => `${API_BASE_URL}/api/k8s/nodes/${name}`,
   K8S_SYSTEM_INFO: `${API_BASE_URL}/api/k8s/system/info`,
+
+  // VyOS endpoints
+  VYOS_DEVICES: `${API_BASE_URL}/api/vyos/devices`,
+  VYOS_NETWORKS: (deviceId) => `${API_BASE_URL}/api/vyos/${deviceId}/networks`,
+  VYOS_NETWORK: (deviceId, iface) => `${API_BASE_URL}/api/vyos/${deviceId}/networks/${iface}`,
+  VYOS_VRFS: (deviceId) => `${API_BASE_URL}/api/vyos/${deviceId}/vrfs`,
+  VYOS_VRF: (deviceId, vrf) => `${API_BASE_URL}/api/vyos/${deviceId}/vrfs/${vrf}`,
+  VYOS_VLANS: (deviceId) => `${API_BASE_URL}/api/vyos/${deviceId}/vlans`,
+  VYOS_VLAN: (deviceId, iface, vlanId) => `${API_BASE_URL}/api/vyos/${deviceId}/vlans/${iface}/${vlanId}`,
+  VYOS_FIREWALL_POLICIES: (deviceId) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies`,
+  VYOS_FIREWALL_POLICY: (deviceId, policy) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}`,
+  VYOS_FIREWALL_RULE: (deviceId, policy, ruleId) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}/rules/${ruleId}`,
+  VYOS_FIREWALL_RULES: (deviceId, policy) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}/rules`,
+  VYOS_ADDRESS_GROUPS: (deviceId) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/address-groups`,
+  VYOS_ADDRESS_GROUP: (deviceId, group) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/address-groups/${group}`,
+  VYOS_FIREWALL_POLICY_DISABLE: (deviceId, policy) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}/disable`,
+  VYOS_FIREWALL_POLICY_ENABLE: (deviceId, policy) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}/enable`,
+  VYOS_FIREWALL_RULE_DISABLE: (deviceId, policy, ruleId) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}/rules/${ruleId}/disable`,
+  VYOS_FIREWALL_RULE_ENABLE: (deviceId, policy, ruleId) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}/rules/${ruleId}/enable`,
 };
 
 export default API_BASE_URL;
