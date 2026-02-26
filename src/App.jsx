@@ -9,6 +9,7 @@ import Networking from './pages/Networking'
 import Kubernetes from './pages/Kubernetes'
 import Docker from './pages/Docker'
 import Labs from './pages/Labs'
+import LabView from './pages/LabView'
 import VncConsole from './pages/VncConsole'
 import VyOS from './pages/VyOS'
 
@@ -21,6 +22,20 @@ function App() {
       <Routes>
         <Route path="/console" element={<VncConsole />} />
       </Routes>
+    );
+  }
+
+  // Lab view: header stays, nav is hidden, content fills the rest
+  if (location.pathname.startsWith('/labs/')) {
+    return (
+      <div className="app-container">
+        <Header />
+        <main className="app-main app-main--fullwidth">
+          <Routes>
+            <Route path="/labs/:labId" element={<LabView />} />
+          </Routes>
+        </main>
+      </div>
     );
   }
 

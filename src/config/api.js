@@ -108,6 +108,16 @@ export const API_ENDPOINTS = {
   VYOS_FIREWALL_RULE_ENABLE: (deviceId, policy, ruleId) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}/rules/${ruleId}/enable`,
   VYOS_NAT_RULES: (deviceId, natType) => `${API_BASE_URL}/api/vyos/${deviceId}/nat/${natType}/rules`,
   VYOS_NAT_RULE: (deviceId, natType, ruleId) => `${API_BASE_URL}/api/vyos/${deviceId}/nat/${natType}/rules/${ruleId}`,
+
+  // Labs endpoints
+  LABS_REPOS: `${API_BASE_URL}/api/labs/repos`,
+  LABS_REPO: (id) => `${API_BASE_URL}/api/labs/repos/${id}`,
+  LABS_REPO_SYNC: (id) => `${API_BASE_URL}/api/labs/repos/${id}/sync`,
+  LABS: `${API_BASE_URL}/api/labs`,
+  LAB: (id) => `${API_BASE_URL}/api/labs/${id}`,
+  LAB_INSTRUCTIONS: (id) => `${API_BASE_URL}/api/labs/${id}/instructions`,
+  LAB_LAUNCH: (id) => `${API_BASE_URL}/api/labs/${id}/launch`,
+  LAB_STATUS: (id) => `${API_BASE_URL}/api/labs/${id}/status`,
 };
 
 export default API_BASE_URL;
