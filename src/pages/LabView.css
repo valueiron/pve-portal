@@ -1,0 +1,320 @@
+/* ============================================================
+   LabView — split-screen lab execution view
+   ============================================================ */
+
+.labview-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ---- Top bar ---- */
+.labview-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 1.25rem;
+  background-color: var(--bg-surface-1);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.labview-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.labview-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.labview-back-btn {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md, 6px);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.labview-back-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-default);
+  background-color: var(--bg-elevated);
+}
+
+.labview-lab-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.labview-launch-btn {
+  padding: 0.4rem 0.9rem;
+  background-color: var(--accent-primary, #06b6d4);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.labview-launch-btn:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.labview-launch-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.labview-gh-link {
+  font-size: 0.78rem;
+  color: var(--accent-primary, #06b6d4);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.labview-gh-link:hover {
+  text-decoration: underline;
+}
+
+/* ---- Status badge ---- */
+.labview-status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---- Launch error banner ---- */
+.labview-launch-error {
+  background-color: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .labview-launch-error {
+  background-color: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+/* ---- Split pane ---- */
+.labview-split {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ---- Instructions pane (left, 33%) ---- */
+.labview-instructions {
+  width: 33%;
+  min-width: 240px;
+  border-right: 1px solid var(--border-subtle);
+  overflow-y: auto;
+  background-color: var(--bg-base);
+}
+
+.labview-instructions-inner {
+  padding: 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+/* Markdown typography resets inside the instructions pane */
+.labview-instructions-inner h1,
+.labview-instructions-inner h2,
+.labview-instructions-inner h3 {
+  font-family: var(--font-display, sans-serif);
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.labview-instructions-inner h1 { font-size: 1.3rem; }
+.labview-instructions-inner h2 { font-size: 1.1rem; }
+.labview-instructions-inner h3 { font-size: 0.95rem; }
+
+.labview-instructions-inner p { margin: 0.5rem 0; }
+
+.labview-instructions-inner code {
+  font-family: monospace;
+  background-color: var(--bg-surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.82rem;
+}
+
+.labview-instructions-inner pre {
+  background-color: var(--bg-surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md, 6px);
+  padding: 0.85rem 1rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+
+.labview-instructions-inner pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.labview-instructions-inner ul,
+.labview-instructions-inner ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.labview-instructions-inner li { margin: 0.25rem 0; }
+
+.labview-instructions-inner a {
+  color: var(--accent-primary, #06b6d4);
+  text-decoration: none;
+}
+
+.labview-instructions-inner a:hover {
+  text-decoration: underline;
+}
+
+/* ---- Console pane (right, 67%) ---- */
+.labview-console {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #0d1117;
+  color: #c9d1d9;
+  overflow: hidden;
+}
+
+.labview-console-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid #30363d;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #8b949e;
+  flex-shrink: 0;
+  background-color: #161b22;
+}
+
+.labview-console-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.labview-console-message {
+  color: #8b949e;
+  line-height: 1.6;
+}
+
+.labview-console-message--info {
+  color: #58a6ff;
+}
+
+.labview-console-message--success {
+  color: #3fb950;
+}
+
+.labview-console-message--error {
+  color: #f85149;
+}
+
+.labview-gh-full-link {
+  display: inline-block;
+  color: #58a6ff;
+  text-decoration: none;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.labview-gh-full-link:hover {
+  text-decoration: underline;
+}
+
+/* Spinner */
+.labview-spinner {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  border: 2px solid rgba(88, 166, 255, 0.3);
+  border-top-color: #58a6ff;
+  border-radius: 50%;
+  animation: labview-spin 0.8s linear infinite;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+@keyframes labview-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Error screen ---- */
+.labview-error-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  height: 100%;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.labview-loading {
+  color: var(--text-secondary);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .labview-split {
+    flex-direction: column;
+  }
+
+  .labview-instructions {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+    max-height: 40vh;
+  }
+
+  .labview-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

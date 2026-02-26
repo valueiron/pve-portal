@@ -41,6 +41,14 @@
   margin-left: var(--nav-collapsed-width);
 }
 
+/* Full-width layout (no nav) — used by LabView */
+.app-main--fullwidth {
+  margin-left: 0 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* Mobile: full width when nav is hidden */
 @media (max-width: 768px) {
   .app-main {
