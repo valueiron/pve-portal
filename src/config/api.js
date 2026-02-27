@@ -109,6 +109,17 @@ export const API_ENDPOINTS = {
   VYOS_NAT_RULES: (deviceId, natType) => `${API_BASE_URL}/api/vyos/${deviceId}/nat/${natType}/rules`,
   VYOS_NAT_RULE: (deviceId, natType, ruleId) => `${API_BASE_URL}/api/vyos/${deviceId}/nat/${natType}/rules/${ruleId}`,
 
+  // DNS endpoints
+  DNS_CUSTOMERS: `${API_BASE_URL}/api/dns/customers`,
+  DNS_CUSTOMER: (id) => `${API_BASE_URL}/api/dns/customers/${id}`,
+  DNS_CUSTOMER_ZONES: (customerId) => `${API_BASE_URL}/api/dns/customers/${customerId}/zones`,
+  DNS_CUSTOMER_BLOCKLISTS: (customerId) => `${API_BASE_URL}/api/dns/customers/${customerId}/blocklists`,
+  DNS_ZONE: (id) => `${API_BASE_URL}/api/dns/zones/${id}`,
+  DNS_ZONE_RECORDS: (zoneId) => `${API_BASE_URL}/api/dns/zones/${zoneId}/records`,
+  DNS_ZONE_RECORD: (zoneId, recordId) => `${API_BASE_URL}/api/dns/zones/${zoneId}/records/${recordId}`,
+  DNS_BLOCKLIST: (id) => `${API_BASE_URL}/api/dns/blocklists/${id}`,
+  DNS_AUDIT: `${API_BASE_URL}/api/dns/audit`,
+
   // Labs endpoints
   LABS_REPOS: `${API_BASE_URL}/api/labs/repos`,
   LABS_REPO: (id) => `${API_BASE_URL}/api/labs/repos/${id}`,

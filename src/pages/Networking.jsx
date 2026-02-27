@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { FaSearch, FaSyncAlt, FaTh, FaTable } from "react-icons/fa";
 import "./Page.css";
 import { fetchNetworking } from "../services/networkingService";
+import DnsTab from "./DnsTab";
 
 const Networking = () => {
     const [networking, setNetworking] = useState({
@@ -20,6 +21,7 @@ const Networking = () => {
     const [resourceTypeFilter, setResourceTypeFilter] = useState("all"); // "all", "vnet", "subnet", "nsg", "public_ip", "vpc", "security_group", "elastic_ip"
     const [refreshing, setRefreshing] = useState(false);
     const [viewMode, setViewMode] = useState("card"); // "card" or "table"
+    const [activeTab, setActiveTab] = useState("infrastructure"); // "infrastructure" or "dns"
 
     const loadNetworking = async (forceRefresh = false) => {
         try {
@@ -480,13 +482,45 @@ const Networking = () => {
         );
     };
 
+    const tabStyle = (tab) => ({
+        padding: "0.5rem 1.25rem",
+        border: "none",
+        borderRadius: "var(--radius-sm)",
+        cursor: "pointer",
+        fontSize: "0.875rem",
+        fontWeight: "500",
+        transition: "all var(--duration-fast)",
+        background: activeTab === tab ? "var(--accent-muted)" : "transparent",
+        color: activeTab === tab ? "var(--accent)" : "var(--text-secondary)",
+        borderBottom: activeTab === tab ? "2px solid var(--accent)" : "2px solid transparent",
+    });
+
     return (
         <div className="page-container">
             <h1 className="page-title">Networking</h1>
             <p className="page-description">
-                View and manage your networking resources from Azure and AWS.
+                View and manage your networking resources from Azure, AWS, and DNS.
             </p>
-            
+
+            {/* Tab switcher */}
+            <div style={{
+                display: "flex",
+                gap: "0.25rem",
+                borderBottom: "1px solid var(--border-subtle)",
+                marginBottom: "1.5rem",
+            }}>
+                <button style={tabStyle("infrastructure")} onClick={() => setActiveTab("infrastructure")}>
+                    Infrastructure
+                </button>
+                <button style={tabStyle("dns")} onClick={() => setActiveTab("dns")}>
+                    DNS
+                </button>
+            </div>
+
+            {activeTab === "dns" && <DnsTab />}
+
+            {activeTab === "infrastructure" && <>
+
             {/* Filters and Search Bar */}
             {!loading && !error && allResources.length > 0 && (
                 <div style={{ 
@@ -838,6 +872,8 @@ const Networking = () => {
                     </div>
                 )}
             </div>
+
+            </>}
         </div>
     );
 };
