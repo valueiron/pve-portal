@@ -156,3 +156,26 @@ export const fetchLabStatus = async (id) => {
   }
   return await response.json();
 };
+
+export const fetchLabVms = async (id) => {
+  const response = await fetch(API_ENDPOINTS.LAB_VMS(id));
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${response.status}`);
+  }
+  const data = await response.json();
+  return data.vms || [];
+};
+
+export const registerLabVms = async (id, vms) => {
+  const response = await fetch(API_ENDPOINTS.LAB_VMS(id), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ vms }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${response.status}`);
+  }
+  return await response.json();
+};
