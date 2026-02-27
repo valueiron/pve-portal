@@ -130,6 +130,28 @@ export const createVNCProxy = async (vmid) => {
 };
 
 /**
+ * Create an SSH terminal session for a VM
+ * @param {number} vmid - Virtual Machine ID
+ * @returns {Promise<Object>} Session info including sessionId and ip
+ */
+export const createTerminalSession = async (vmid) => {
+  try {
+    const response = await fetch(API_ENDPOINTS.TERMINAL_SESSION(vmid), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Error creating terminal session for VM ${vmid}:`, error);
+    throw error;
+  }
+};
+
+/**
  * Shutdown a virtual machine
  * @param {number} vmid - Virtual Machine ID
  * @returns {Promise<Object>} Response data

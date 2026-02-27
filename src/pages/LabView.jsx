@@ -9,7 +9,7 @@ import {
   fetchLabStatus,
   fetchLabVms,
 } from "../services/labsService";
-import VncPanel from "./VncPanel";
+import TerminalPanel from "./TerminalPanel";
 
 // ---------------------------------------------------------------------------
 // Status badge
@@ -49,12 +49,12 @@ const StatusBadge = ({ statusKey }) => {
 };
 
 // ---------------------------------------------------------------------------
-// ActiveVncTab — renders the VncPanel for the selected VM tab
+// ActiveTerminalTab — renders the TerminalPanel for the selected VM tab
 // ---------------------------------------------------------------------------
-const ActiveVncTab = ({ vms, activeTab }) => {
+const ActiveTerminalTab = ({ vms, activeTab }) => {
   const vm = vms.find((v) => String(v.vmid) === activeTab);
   if (!vm) return null;
-  return <VncPanel key={vm.vmid} vmid={vm.vmid} name={vm.name} />;
+  return <TerminalPanel key={vm.vmid} vmid={vm.vmid} name={vm.name} />;
 };
 
 // ---------------------------------------------------------------------------
@@ -285,7 +285,7 @@ const LabView = () => {
                 )}
               </div>
             ) : (
-              <ActiveVncTab vms={vms} activeTab={activeTab} />
+              <ActiveTerminalTab vms={vms} activeTab={activeTab} />
             )}
           </div>
         </div>

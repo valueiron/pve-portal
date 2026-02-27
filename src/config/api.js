@@ -47,6 +47,9 @@ export const API_ENDPOINTS = {
     const params = new URLSearchParams({ vmid, port, vncticket, node });
     return `${WS_BASE_URL}/vnc?${params.toString()}`;
   },
+  TERMINAL_SESSION: (vmid) => `${API_BASE_URL}/api/vms/${vmid}/terminal`,
+  TERMINAL_WEBSOCKET: (sessionId) =>
+    `${WS_BASE_URL}/ws/terminal?sessionId=${encodeURIComponent(sessionId)}`,
   NODES: `${API_BASE_URL}/api/nodes`,
   NETWORKING: `${API_BASE_URL}/api/networking`,
   STORAGE: `${API_BASE_URL}/api/storage`,
