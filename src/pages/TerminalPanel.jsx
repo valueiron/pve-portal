@@ -39,6 +39,14 @@ const TerminalPanel = ({ vmid, name }) => {
 
   const [status, setStatus] = useState("Connecting…");
   const [error, setError] = useState(null);
+  const [fontSize, setFontSize] = useState(13);
+
+  // Update font size on the live terminal whenever the slider moves
+  useEffect(() => {
+    if (!termRef.current) return;
+    termRef.current.options.fontSize = fontSize;
+    try { fitAddonRef.current?.fit(); } catch {}
+  }, [fontSize]);
 
   const disconnect = useCallback(() => {
     clearInterval(pingRef.current);
@@ -53,7 +61,7 @@ const TerminalPanel = ({ vmid, name }) => {
     // ── Initialize xterm ──────────────────────────────────────────────
     const term = new Terminal({
       fontFamily: '"JetBrains Mono", "Cascadia Code", "IBM Plex Mono", monospace',
-      fontSize: 13,
+      fontSize,
       lineHeight: 1.2,
       cursorBlink: true,
       cursorStyle: "block",
@@ -217,20 +225,37 @@ const TerminalPanel = ({ vmid, name }) => {
             </span>
           )}
         </span>
-        <button
-          onClick={disconnect}
-          style={{
-            padding: "0.2rem 0.6rem",
-            border: "1px solid #555",
-            borderRadius: "4px",
-            backgroundColor: "#333",
-            color: "#fff",
-            cursor: "pointer",
-            fontSize: "0.75rem",
-          }}
-        >
-          Disconnect
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          {/* Font size slider */}
+          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#aaa", fontSize: "0.72rem", userSelect: "none" }}>
+            <span style={{ fontSize: "0.8rem" }}>A</span>
+            <input
+              type="range"
+              min="8"
+              max="28"
+              value={fontSize}
+              onChange={(e) => setFontSize(Number(e.target.value))}
+              style={{ width: "72px", accentColor: "#a3ff47", cursor: "pointer" }}
+            />
+            <span style={{ fontSize: "1rem" }}>A</span>
+            <span style={{ minWidth: "1.8rem", textAlign: "right" }}>{fontSize}px</span>
+          </label>
+
+          <button
+            onClick={disconnect}
+            style={{
+              padding: "0.2rem 0.6rem",
+              border: "1px solid #555",
+              borderRadius: "4px",
+              backgroundColor: "#333",
+              color: "#fff",
+              cursor: "pointer",
+              fontSize: "0.75rem",
+            }}
+          >
+            Disconnect
+          </button>
+        </div>
       </div>
 
       {/* xterm.js viewport */}
