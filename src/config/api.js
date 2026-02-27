@@ -108,6 +108,10 @@ export const API_ENDPOINTS = {
   VYOS_FIREWALL_RULE_ENABLE: (deviceId, policy, ruleId) => `${API_BASE_URL}/api/vyos/${deviceId}/firewall/policies/${policy}/rules/${ruleId}/enable`,
   VYOS_NAT_RULES: (deviceId, natType) => `${API_BASE_URL}/api/vyos/${deviceId}/nat/${natType}/rules`,
   VYOS_NAT_RULE: (deviceId, natType, ruleId) => `${API_BASE_URL}/api/vyos/${deviceId}/nat/${natType}/rules/${ruleId}`,
+  VYOS_ROUTES: (deviceId) => `${API_BASE_URL}/api/vyos/${deviceId}/routes`,
+  VYOS_ROUTE: (deviceId, prefix, mask) => `${API_BASE_URL}/api/vyos/${deviceId}/routes/${prefix}/${mask}`,
+  VYOS_DHCP_SERVERS: (deviceId) => `${API_BASE_URL}/api/vyos/${deviceId}/dhcp/servers`,
+  VYOS_DHCP_SERVER: (deviceId, name) => `${API_BASE_URL}/api/vyos/${deviceId}/dhcp/servers/${name}`,
 
   // DNS endpoints
   DNS_CUSTOMERS: `${API_BASE_URL}/api/dns/customers`,

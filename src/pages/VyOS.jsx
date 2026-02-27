@@ -4,7 +4,7 @@ import {
   FaNetworkWired, FaLayerGroup, FaTag, FaShieldAlt, FaObjectGroup,
   FaSyncAlt, FaPlus, FaEdit, FaTrash, FaTimes, FaTh, FaTable,
   FaChevronDown, FaChevronUp, FaSitemap, FaToggleOn, FaToggleOff,
-  FaExchangeAlt,
+  FaExchangeAlt, FaRoute, FaServer,
 } from "react-icons/fa";
 import "./Page.css";
 import {
@@ -16,6 +16,8 @@ import {
   disablePolicy, enablePolicy, disableRule, enableRule,
   fetchAddressGroups, createAddressGroup, updateAddressGroup, deleteAddressGroup,
   fetchNATRules, createNATRule, updateNATRule, deleteNATRule,
+  fetchRoutes, createRoute, updateRoute, deleteRoute,
+  fetchDHCPServers, createDHCPServer, updateDHCPServer, deleteDHCPServer,
 } from "../services/vyosService";
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -163,6 +165,8 @@ const TABS = [
   { id: "policies",       label: "Firewall",      icon: FaShieldAlt,    color: "#f44336" },
   { id: "address_groups", label: "Address Groups", icon: FaObjectGroup, color: "#4caf50" },
   { id: "nat",            label: "NAT",           icon: FaExchangeAlt,  color: "#ff5722" },
+  { id: "routes",         label: "Routes",        icon: FaRoute,        color: "#2196f3" },
+  { id: "dhcp",           label: "DHCP",          icon: FaServer,       color: "#009688" },
 ];
 
 const TabBar = ({ active, onChange }) => (
@@ -1340,6 +1344,328 @@ const NATTab = ({ deviceId }) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
+// ROUTES TAB
+
+const ROUTES_COLOR = "#2196f3";
+
+const emptyRouteForm = () => ({ network: "", next_hop: "", distance: "", description: "" });
+
+const RoutesTab = ({ deviceId }) => {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [modal, setModal] = useState(null); // null | "create" | route object
+  const [form, setForm] = useState(emptyRouteForm());
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const load = useCallback(async (force = false) => {
+    try {
+      force ? setRefreshing(true) : setLoading(true);
+      setError(null);
+      const data = await fetchRoutes(deviceId, force);
+      setItems(Array.isArray(data) ? data : []);
+    } catch (e) { setError(e.message); } finally { setLoading(false); setRefreshing(false); }
+  }, [deviceId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const openCreate = () => { setForm(emptyRouteForm()); setFormError(""); setModal("create"); };
+  const openEdit = (item) => {
+    const [prefix, mask] = (item.network || "").split("/");
+    setForm({
+      network: item.network || "",
+      next_hop: item.next_hop || "",
+      distance: item.distance || "",
+      description: item.description || "",
+      _prefix: prefix || "",
+      _mask: mask || "",
+    });
+    setFormError("");
+    setModal(item);
+  };
+
+  const handleSubmit = async () => {
+    setFormError("");
+    if (!form.network || !form.next_hop) { setFormError("Network and next hop are required"); return; }
+    if (!form.network.includes("/")) { setFormError("Network must be in CIDR notation (e.g. 192.168.1.0/24)"); return; }
+    setSubmitting(true);
+    try {
+      const payload = {
+        next_hop: form.next_hop,
+        distance: form.distance || undefined,
+        description: form.description || undefined,
+      };
+      if (modal === "create") {
+        await createRoute(deviceId, { network: form.network, ...payload });
+      } else {
+        const [prefix, mask] = modal.network.split("/");
+        await updateRoute(deviceId, prefix, mask, payload);
+      }
+      setModal(null);
+      load(true);
+    } catch (e) { setFormError(e.message); } finally { setSubmitting(false); }
+  };
+
+  const handleDelete = async (item) => {
+    if (!window.confirm(`Delete route ${item.network}?`)) return;
+    try {
+      const [prefix, mask] = item.network.split("/");
+      await deleteRoute(deviceId, prefix, mask);
+      load(true);
+    } catch (e) { alert(e.message); }
+  };
+
+  return (
+    <>
+      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+        <button onClick={openCreate} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.55rem 1rem", borderRadius: "8px", border: "none", background: "#4caf50", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem" }}>
+          <FaPlus />Add Route
+        </button>
+        <button onClick={() => load(true)} disabled={refreshing} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.55rem 0.9rem", borderRadius: "8px", border: "none", background: refreshing ? "#6b6b6b" : ROUTES_COLOR, color: "#fff", cursor: refreshing ? "not-allowed" : "pointer", fontWeight: 600, fontSize: "0.875rem", opacity: refreshing ? 0.6 : 1 }}>
+          <FaSyncAlt style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />{refreshing ? "Refreshing…" : "Refresh"}
+        </button>
+      </div>
+
+      {loading ? <Loading /> : error ? <ErrorMsg msg={error} /> : items.length === 0 ? (
+        <Empty label="static routes" />
+      ) : (
+        <div className="page-table-container">
+          <table className="page-table">
+            <thead>
+              <tr>
+                <th>Network</th>
+                <th>Next Hop</th>
+                <th>Distance</th>
+                <th>Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...items].sort((a, b) => (a.network || "").localeCompare(b.network || "")).map(item => (
+                <tr key={item.network}>
+                  <td><AddrTag addr={item.network} /></td>
+                  <td style={{ fontFamily: "monospace" }}>{item.next_hop || <span style={{ color: "var(--text-secondary)" }}>—</span>}</td>
+                  <td>{item.distance ? <Badge label={item.distance} color={ROUTES_COLOR} /> : <span style={{ color: "var(--text-secondary)" }}>default</span>}</td>
+                  <td style={{ color: "var(--text-secondary)" }}>{item.description || "—"}</td>
+                  <td>
+                    <div style={{ display: "flex", gap: "0.4rem" }}>
+                      <Btn icon={FaEdit} label="Edit" color={ROUTES_COLOR} onClick={() => openEdit(item)} />
+                      <Btn icon={FaTrash} label="Delete" color="#f44336" onClick={() => handleDelete(item)} />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {modal && (
+        <Modal
+          title={modal === "create" ? "Add Static Route" : `Edit Route ${modal.network}`}
+          onClose={() => setModal(null)}
+          onSubmit={handleSubmit}
+          submitting={submitting}
+        >
+          {formError && <p style={{ color: "#f44336", marginBottom: "0.75rem", fontWeight: 600 }}>{formError}</p>}
+          {modal === "create" && (
+            <FormField label="Network (CIDR) *">
+              <input style={inputStyle} value={form.network} onChange={e => setForm(f => ({ ...f, network: e.target.value }))} placeholder="e.g. 192.168.100.0/24" required />
+            </FormField>
+          )}
+          <FormField label="Next Hop *">
+            <input style={inputStyle} value={form.next_hop} onChange={e => setForm(f => ({ ...f, next_hop: e.target.value }))} placeholder="e.g. 10.0.0.1" required />
+          </FormField>
+          <FormField label="Administrative Distance">
+            <input style={inputStyle} type="number" min="1" max="255" value={form.distance} onChange={e => setForm(f => ({ ...f, distance: e.target.value }))} placeholder="1–255 (optional, default 1)" />
+          </FormField>
+          <FormField label="Description">
+            <input style={inputStyle} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Optional description" />
+          </FormField>
+        </Modal>
+      )}
+    </>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// DHCP TAB
+
+const DHCP_COLOR = "#009688";
+
+const emptyDHCPForm = () => ({
+  name: "", subnet: "", default_router: "", dns_servers: "", range_start: "", range_stop: "", lease: "",
+});
+
+const DHCPTab = ({ deviceId }) => {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [modal, setModal] = useState(null); // null | "create" | dhcp server object
+  const [form, setForm] = useState(emptyDHCPForm());
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [expanded, setExpanded] = useState(null); // name of expanded row
+
+  const load = useCallback(async (force = false) => {
+    try {
+      force ? setRefreshing(true) : setLoading(true);
+      setError(null);
+      const data = await fetchDHCPServers(deviceId, force);
+      setItems(Array.isArray(data) ? data : []);
+    } catch (e) { setError(e.message); } finally { setLoading(false); setRefreshing(false); }
+  }, [deviceId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const openCreate = () => { setForm(emptyDHCPForm()); setFormError(""); setModal("create"); };
+  const openEdit = (item) => {
+    const firstSubnet = item.subnets?.[0] || {};
+    setForm({
+      name: item.name || "",
+      subnet: firstSubnet.subnet || "",
+      default_router: firstSubnet.default_router || "",
+      dns_servers: (firstSubnet.dns_servers || []).join(", "),
+      range_start: firstSubnet.range_start || "",
+      range_stop: firstSubnet.range_stop || "",
+      lease: firstSubnet.lease || "",
+    });
+    setFormError("");
+    setModal(item);
+  };
+
+  const handleSubmit = async () => {
+    setFormError("");
+    if (!form.name || !form.subnet) { setFormError("Name and subnet are required"); return; }
+    setSubmitting(true);
+    try {
+      const dnsServers = form.dns_servers
+        ? form.dns_servers.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
+        : [];
+      const payload = {
+        subnet: form.subnet,
+        default_router: form.default_router || undefined,
+        dns_servers: dnsServers.length ? dnsServers : undefined,
+        range_start: form.range_start || undefined,
+        range_stop: form.range_stop || undefined,
+        lease: form.lease || undefined,
+      };
+      if (modal === "create") {
+        await createDHCPServer(deviceId, { name: form.name, ...payload });
+      } else {
+        await updateDHCPServer(deviceId, modal.name, payload);
+      }
+      setModal(null);
+      load(true);
+    } catch (e) { setFormError(e.message); } finally { setSubmitting(false); }
+  };
+
+  const handleDelete = async (item) => {
+    if (!window.confirm(`Delete DHCP server "${item.name}"?`)) return;
+    try { await deleteDHCPServer(deviceId, item.name); load(true); } catch (e) { alert(e.message); }
+  };
+
+  return (
+    <>
+      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+        <button onClick={openCreate} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.55rem 1rem", borderRadius: "8px", border: "none", background: "#4caf50", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem" }}>
+          <FaPlus />Add DHCP Server
+        </button>
+        <button onClick={() => load(true)} disabled={refreshing} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.55rem 0.9rem", borderRadius: "8px", border: "none", background: refreshing ? "#6b6b6b" : DHCP_COLOR, color: "#fff", cursor: refreshing ? "not-allowed" : "pointer", fontWeight: 600, fontSize: "0.875rem", opacity: refreshing ? 0.6 : 1 }}>
+          <FaSyncAlt style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />{refreshing ? "Refreshing…" : "Refresh"}
+        </button>
+      </div>
+
+      {loading ? <Loading /> : error ? <ErrorMsg msg={error} /> : items.length === 0 ? (
+        <Empty label="DHCP servers" />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          {[...items].sort((a, b) => (a.name || "").localeCompare(b.name || "")).map(item => {
+            const isExpanded = expanded === item.name;
+            return (
+              <div key={item.name} className="page-card" style={{ padding: 0, overflow: "hidden" }}>
+                {/* Header row */}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.85rem 1.1rem", cursor: "pointer" }}
+                  onClick={() => setExpanded(isExpanded ? null : item.name)}>
+                  <FaServer style={{ color: DHCP_COLOR, flexShrink: 0 }} />
+                  <span style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text-primary)", flex: 1 }}>{item.name}</span>
+                  <Badge label={`${item.subnets?.length || 0} subnet${item.subnets?.length !== 1 ? "s" : ""}`} color={DHCP_COLOR} />
+                  {isExpanded ? <FaChevronUp style={{ color: "var(--text-secondary)" }} /> : <FaChevronDown style={{ color: "var(--text-secondary)" }} />}
+                </div>
+
+                {isExpanded && (
+                  <div style={{ borderTop: "1px solid var(--border-subtle, #333)", padding: "0.85rem 1.1rem" }}>
+                    {(item.subnets || []).map((sub, idx) => (
+                      <div key={sub.subnet || idx} style={{ marginBottom: "0.75rem", padding: "0.75rem", background: `${DHCP_COLOR}0d`, borderRadius: "8px", border: `1px solid ${DHCP_COLOR}33` }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem 1.5rem", fontSize: "0.875rem" }}>
+                          <div><span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>Subnet</span><br /><AddrTag addr={sub.subnet} /></div>
+                          {sub.default_router && <div><span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>Default Router</span><br /><span style={{ fontFamily: "monospace" }}>{sub.default_router}</span></div>}
+                          {sub.range_start && <div><span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>Pool</span><br /><span style={{ fontFamily: "monospace" }}>{sub.range_start} – {sub.range_stop}</span></div>}
+                          {sub.lease && <div><span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>Lease</span><br />{sub.lease}s</div>}
+                          {sub.dns_servers?.length > 0 && (
+                            <div>
+                              <span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>DNS</span><br />
+                              <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
+                                {sub.dns_servers.map(ns => <AddrTag key={ns} addr={ns} />)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.5rem" }}>
+                      <Btn icon={FaEdit} label="Edit" color={DHCP_COLOR} onClick={() => openEdit(item)} />
+                      <Btn icon={FaTrash} label="Delete" color="#f44336" onClick={() => handleDelete(item)} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {modal && (
+        <Modal
+          title={modal === "create" ? "Add DHCP Server" : `Edit DHCP Server "${modal.name}"`}
+          onClose={() => setModal(null)}
+          onSubmit={handleSubmit}
+          submitting={submitting}
+        >
+          {formError && <p style={{ color: "#f44336", marginBottom: "0.75rem", fontWeight: 600 }}>{formError}</p>}
+          {modal === "create" && (
+            <FormField label="Name *">
+              <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. LAN" required />
+            </FormField>
+          )}
+          <FormField label="Subnet (CIDR) *">
+            <input style={inputStyle} value={form.subnet} onChange={e => setForm(f => ({ ...f, subnet: e.target.value }))} placeholder="e.g. 192.168.1.0/24" required />
+          </FormField>
+          <FormField label="Default Router">
+            <input style={inputStyle} value={form.default_router} onChange={e => setForm(f => ({ ...f, default_router: e.target.value }))} placeholder="e.g. 192.168.1.1 (optional)" />
+          </FormField>
+          <FormField label="DNS Servers">
+            <input style={inputStyle} value={form.dns_servers} onChange={e => setForm(f => ({ ...f, dns_servers: e.target.value }))} placeholder="8.8.8.8, 8.8.4.4 (comma-separated, optional)" />
+          </FormField>
+          <FormField label="Pool Start">
+            <input style={inputStyle} value={form.range_start} onChange={e => setForm(f => ({ ...f, range_start: e.target.value }))} placeholder="e.g. 192.168.1.100 (optional)" />
+          </FormField>
+          <FormField label="Pool Stop">
+            <input style={inputStyle} value={form.range_stop} onChange={e => setForm(f => ({ ...f, range_stop: e.target.value }))} placeholder="e.g. 192.168.1.200 (optional)" />
+          </FormField>
+          <FormField label="Lease Time (seconds)">
+            <input style={inputStyle} type="number" min="60" value={form.lease} onChange={e => setForm(f => ({ ...f, lease: e.target.value }))} placeholder="e.g. 86400 (optional)" />
+          </FormField>
+        </Modal>
+      )}
+    </>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════
 // MAIN VyOS PAGE
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -1371,6 +1697,8 @@ const VyOS = () => {
       case "policies": return <PoliciesTab key={`${selectedDevice}-policies`} deviceId={selectedDevice} />;
       case "address_groups": return <AddressGroupsTab key={`${selectedDevice}-ag`} deviceId={selectedDevice} />;
       case "nat": return <NATTab key={`${selectedDevice}-nat`} deviceId={selectedDevice} />;
+      case "routes": return <RoutesTab key={`${selectedDevice}-routes`} deviceId={selectedDevice} />;
+      case "dhcp": return <DHCPTab key={`${selectedDevice}-dhcp`} deviceId={selectedDevice} />;
       default: return null;
     }
   };
@@ -1383,7 +1711,7 @@ const VyOS = () => {
         <h1 className="page-title" style={{ margin: 0 }}>VyOS Router Management</h1>
       </div>
       <p className="page-description">
-        Manage VyOS router resources — interfaces, VRFs, VLANs, firewall policies, address groups, and NAT rules.
+        Manage VyOS router resources — interfaces, VRFs, VLANs, firewall policies, address groups, NAT rules, static routes, and DHCP servers.
       </p>
 
       {/* Device Selector */}

@@ -246,3 +246,61 @@ export const deleteNATRule = async (deviceId, natType, ruleId) => {
   clearCache(API_ENDPOINTS.VYOS_NAT_RULES(deviceId, natType));
   return result;
 };
+
+// ── Static Routes ──────────────────────────────────────────────────────────
+
+export const fetchRoutes = (deviceId, forceRefresh = false) =>
+  cachedFetch(API_ENDPOINTS.VYOS_ROUTES(deviceId), forceRefresh);
+
+export const createRoute = async (deviceId, data) => {
+  const result = await jsonFetch(API_ENDPOINTS.VYOS_ROUTES(deviceId), {
+    method: 'POST', body: JSON.stringify(data),
+  });
+  clearCache(API_ENDPOINTS.VYOS_ROUTES(deviceId));
+  return result;
+};
+
+export const updateRoute = async (deviceId, prefix, mask, data) => {
+  const result = await jsonFetch(API_ENDPOINTS.VYOS_ROUTE(deviceId, prefix, mask), {
+    method: 'PUT', body: JSON.stringify(data),
+  });
+  clearCache(API_ENDPOINTS.VYOS_ROUTES(deviceId));
+  return result;
+};
+
+export const deleteRoute = async (deviceId, prefix, mask) => {
+  const result = await jsonFetch(API_ENDPOINTS.VYOS_ROUTE(deviceId, prefix, mask), {
+    method: 'DELETE',
+  });
+  clearCache(API_ENDPOINTS.VYOS_ROUTES(deviceId));
+  return result;
+};
+
+// ── DHCP Servers ───────────────────────────────────────────────────────────
+
+export const fetchDHCPServers = (deviceId, forceRefresh = false) =>
+  cachedFetch(API_ENDPOINTS.VYOS_DHCP_SERVERS(deviceId), forceRefresh);
+
+export const createDHCPServer = async (deviceId, data) => {
+  const result = await jsonFetch(API_ENDPOINTS.VYOS_DHCP_SERVERS(deviceId), {
+    method: 'POST', body: JSON.stringify(data),
+  });
+  clearCache(API_ENDPOINTS.VYOS_DHCP_SERVERS(deviceId));
+  return result;
+};
+
+export const updateDHCPServer = async (deviceId, name, data) => {
+  const result = await jsonFetch(API_ENDPOINTS.VYOS_DHCP_SERVER(deviceId, name), {
+    method: 'PUT', body: JSON.stringify(data),
+  });
+  clearCache(API_ENDPOINTS.VYOS_DHCP_SERVERS(deviceId));
+  return result;
+};
+
+export const deleteDHCPServer = async (deviceId, name) => {
+  const result = await jsonFetch(API_ENDPOINTS.VYOS_DHCP_SERVER(deviceId, name), {
+    method: 'DELETE',
+  });
+  clearCache(API_ENDPOINTS.VYOS_DHCP_SERVERS(deviceId));
+  return result;
+};
