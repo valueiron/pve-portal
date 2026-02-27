@@ -7,7 +7,9 @@ import {
   fetchLabInstructions,
   launchLab,
   fetchLabStatus,
+  fetchLabVms,
 } from "../services/labsService";
+import VncPanel from "./VncPanel";
 
 // ---------------------------------------------------------------------------
 // Status badge
@@ -47,6 +49,15 @@ const StatusBadge = ({ statusKey }) => {
 };
 
 // ---------------------------------------------------------------------------
+// ActiveVncTab — renders the VncPanel for the selected VM tab
+// ---------------------------------------------------------------------------
+const ActiveVncTab = ({ vms, activeTab }) => {
+  const vm = vms.find((v) => String(v.vmid) === activeTab);
+  if (!vm) return null;
+  return <VncPanel key={vm.vmid} vmid={vm.vmid} name={vm.name} />;
+};
+
+// ---------------------------------------------------------------------------
 // LabView
 // ---------------------------------------------------------------------------
 const LabView = () => {
@@ -61,6 +72,8 @@ const LabView = () => {
   const [launching, setLaunching] = useState(false);
   const [launchError, setLaunchError] = useState(null);
   const [runStatus, setRunStatus] = useState({ status: "idle", conclusion: null });
+  const [vms, setVms] = useState([]);
+  const [activeTab, setActiveTab] = useState("status");
 
   const pollRef = useRef(null);
 
@@ -97,9 +110,26 @@ const LabView = () => {
   }, [decodedId]);
 
   useEffect(() => {
+    pollStatus();
     pollRef.current = setInterval(pollStatus, 10000);
     return () => clearInterval(pollRef.current);
   }, [pollStatus]);
+
+  // VM polling
+  const pollVms = useCallback(async () => {
+    try {
+      const vmList = await fetchLabVms(decodedId);
+      setVms(vmList);
+    } catch {
+      // silently ignore
+    }
+  }, [decodedId]);
+
+  useEffect(() => {
+    pollVms();
+    const id = setInterval(pollVms, 10000);
+    return () => clearInterval(id);
+  }, [pollVms]);
 
   // Launch handler
   const handleLaunch = async () => {
@@ -183,54 +213,79 @@ const LabView = () => {
           </div>
         </div>
 
-        {/* Right: console / status pane */}
+        {/* Right: tabbed console / VNC pane */}
         <div className="labview-console">
-          <div className="labview-console-header">
-            <span>Execution</span>
-            <StatusBadge statusKey={statusKey} />
-          </div>
-          <div className="labview-console-body">
-            {statusKey === "idle" && (
-              <div className="labview-console-message">
-                Click <strong>Launch</strong> to start this lab via GitHub Actions.
-              </div>
-            )}
-            {statusKey === "queued" && (
-              <div className="labview-console-message labview-console-message--info">
-                Job queued — waiting for a runner…
-              </div>
-            )}
-            {statusKey === "in_progress" && (
-              <div className="labview-console-message labview-console-message--info">
-                <span className="labview-spinner" /> Lab is running…
-                <br />
-                <small>Status updates every 10 seconds.</small>
-              </div>
-            )}
-            {statusKey === "completed_success" && (
-              <div className="labview-console-message labview-console-message--success">
-                Lab deployed successfully!
-              </div>
-            )}
-            {statusKey === "completed_failure" && (
-              <div className="labview-console-message labview-console-message--error">
-                Lab run failed. Check the GitHub Actions log for details.
-              </div>
-            )}
-            {statusKey === "completed_cancelled" && (
-              <div className="labview-console-message">
-                Run was cancelled.
-              </div>
-            )}
-            {runStatus.html_url && (
-              <a
-                href={runStatus.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="labview-gh-full-link"
+          {/* Tab bar */}
+          <div className="labview-tab-bar">
+            <button
+              className={`labview-tab${activeTab === "status" ? " labview-tab--active" : ""}`}
+              onClick={() => setActiveTab("status")}
+            >
+              Status
+              {vms.length > 0 && (
+                <span className="labview-tab-badge">{vms.length}</span>
+              )}
+            </button>
+            {vms.map((vm) => (
+              <button
+                key={vm.vmid}
+                className={`labview-tab${activeTab === String(vm.vmid) ? " labview-tab--active" : ""}`}
+                onClick={() => setActiveTab(String(vm.vmid))}
               >
-                Open full run log on GitHub ↗
-              </a>
+                {vm.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div className="labview-tab-content">
+            {activeTab === "status" ? (
+              <div className="labview-console-body">
+                {statusKey === "idle" && (
+                  <div className="labview-console-message">
+                    Click <strong>Launch</strong> to start this lab via GitHub Actions.
+                  </div>
+                )}
+                {statusKey === "queued" && (
+                  <div className="labview-console-message labview-console-message--info">
+                    Job queued — waiting for a runner…
+                  </div>
+                )}
+                {statusKey === "in_progress" && (
+                  <div className="labview-console-message labview-console-message--info">
+                    <span className="labview-spinner" /> Lab is running…
+                    <br />
+                    <small>Status updates every 10 seconds.</small>
+                  </div>
+                )}
+                {statusKey === "completed_success" && (
+                  <div className="labview-console-message labview-console-message--success">
+                    Lab deployed successfully!
+                  </div>
+                )}
+                {statusKey === "completed_failure" && (
+                  <div className="labview-console-message labview-console-message--error">
+                    Lab run failed. Check the GitHub Actions log for details.
+                  </div>
+                )}
+                {statusKey === "completed_cancelled" && (
+                  <div className="labview-console-message">
+                    Run was cancelled.
+                  </div>
+                )}
+                {runStatus.html_url && (
+                  <a
+                    href={runStatus.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="labview-gh-full-link"
+                  >
+                    Open full run log on GitHub ↗
+                  </a>
+                )}
+              </div>
+            ) : (
+              <ActiveVncTab vms={vms} activeTab={activeTab} />
             )}
           </div>
         </div>
