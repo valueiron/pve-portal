@@ -265,8 +265,22 @@
 .labview-tab-content {
   flex: 1;
   overflow: hidden;
+  position: relative;
+}
+
+/* Each panel is absolutely stacked — only the active one is visible */
+.labview-tab-panel {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.labview-tab-panel--active {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .labview-console-body {

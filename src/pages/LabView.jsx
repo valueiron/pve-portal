@@ -49,15 +49,6 @@ const StatusBadge = ({ statusKey }) => {
 };
 
 // ---------------------------------------------------------------------------
-// ActiveVncTab — renders the VncPanel for the selected VM tab
-// ---------------------------------------------------------------------------
-const ActiveVncTab = ({ vms, activeTab }) => {
-  const vm = vms.find((v) => String(v.vmid) === activeTab);
-  if (!vm) return null;
-  return <VncPanel key={vm.vmid} vmid={vm.vmid} name={vm.name} />;
-};
-
-// ---------------------------------------------------------------------------
 // LabView
 // ---------------------------------------------------------------------------
 const LabView = () => {
@@ -74,6 +65,8 @@ const LabView = () => {
   const [runStatus, setRunStatus] = useState({ status: "idle", conclusion: null });
   const [vms, setVms] = useState([]);
   const [activeTab, setActiveTab] = useState("status");
+  // Track which VM tabs have ever been opened so we never unmount their VncPanels
+  const [mountedVms, setMountedVms] = useState(new Set());
 
   const pollRef = useRef(null);
 
@@ -230,16 +223,21 @@ const LabView = () => {
               <button
                 key={vm.vmid}
                 className={`labview-tab${activeTab === String(vm.vmid) ? " labview-tab--active" : ""}`}
-                onClick={() => setActiveTab(String(vm.vmid))}
+                onClick={() => {
+                  const id = String(vm.vmid);
+                  setMountedVms((prev) => new Set([...prev, id]));
+                  setActiveTab(id);
+                }}
               >
                 {vm.name}
               </button>
             ))}
           </div>
 
-          {/* Tab content */}
+          {/* Tab content — all panels are absolutely stacked; only active one is visible */}
           <div className="labview-tab-content">
-            {activeTab === "status" ? (
+            {/* Status panel */}
+            <div className={`labview-tab-panel${activeTab === "status" ? " labview-tab-panel--active" : ""}`}>
               <div className="labview-console-body">
                 {statusKey === "idle" && (
                   <div className="labview-console-message">
@@ -284,9 +282,21 @@ const LabView = () => {
                   </a>
                 )}
               </div>
-            ) : (
-              <ActiveVncTab vms={vms} activeTab={activeTab} />
-            )}
+            </div>
+
+            {/* VNC panels — mounted on first open, never unmounted after that */}
+            {vms.map((vm) => {
+              const tabId = String(vm.vmid);
+              if (!mountedVms.has(tabId)) return null;
+              return (
+                <div
+                  key={vm.vmid}
+                  className={`labview-tab-panel${activeTab === tabId ? " labview-tab-panel--active" : ""}`}
+                >
+                  <VncPanel vmid={vm.vmid} name={vm.name} />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
