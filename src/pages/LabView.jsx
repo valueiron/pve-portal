@@ -1,6 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import { Terminal } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
+import { WebLinksAddon } from "@xterm/addon-web-links";
+import "@xterm/xterm/css/xterm.css";
 import "./LabView.css";
 import {
   fetchLabDetails,
@@ -9,6 +13,7 @@ import {
   fetchLabStatus,
   fetchLabVms,
 } from "../services/labsService";
+import { API_ENDPOINTS } from "../config/api";
 import TerminalPanel from "./TerminalPanel";
 
 // ---------------------------------------------------------------------------
@@ -49,11 +54,233 @@ const StatusBadge = ({ statusKey }) => {
 };
 
 // ---------------------------------------------------------------------------
-// ActiveTerminalTab — renders the TerminalPanel for the selected VM tab
+// Shared terminal theme
+// ---------------------------------------------------------------------------
+const EXEC_THEME = {
+  background: "#0c0c0f", foreground: "#c8d0e0", cursor: "#a3ff47",
+  cursorAccent: "#0c0c0f", black: "#000000", red: "#ff4444", green: "#44cc44",
+  yellow: "#dddd00", blue: "#4488cc", magenta: "#aa44cc", cyan: "#44aacc",
+  white: "#c8d0e0", brightBlack: "#444444", brightRed: "#ff8888",
+  brightGreen: "#88ee88", brightYellow: "#eeee44", brightBlue: "#88aadd",
+  brightMagenta: "#cc88ee", brightCyan: "#88ccdd", brightWhite: "#ffffff",
+  selectionBackground: "rgba(163,255,71,0.25)",
+};
+
+// ---------------------------------------------------------------------------
+// ExecTerminalPanel — generic xterm.js panel that connects via a POST session
+// endpoint then a WebSocket. Used for both Docker and K8s exec.
+// Props:
+//   name         string   — label shown in the status bar
+//   createSession  async () => { sessionId }   — POST to create session
+//   buildWsUrl   (sessionId) => string          — build the WS URL
+// ---------------------------------------------------------------------------
+const ExecTerminalPanel = ({ name, createSession, buildWsUrl }) => {
+  const containerRef = useRef(null);
+  const termRef = useRef(null);
+  const fitAddonRef = useRef(null);
+  const wsRef = useRef(null);
+  const pingRef = useRef(null);
+  const [status, setStatus] = useState("Connecting…");
+  const [error, setError] = useState(null);
+  const [fontSize, setFontSize] = useState(13);
+
+  useEffect(() => {
+    if (!termRef.current) return;
+    termRef.current.options.fontSize = fontSize;
+    try { fitAddonRef.current?.fit(); } catch {}
+  }, [fontSize]);
+
+  const disconnect = useCallback(() => {
+    clearInterval(pingRef.current);
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.close(1000);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const term = new Terminal({
+      fontFamily: '"JetBrains Mono","Cascadia Code","IBM Plex Mono",monospace',
+      fontSize,
+      lineHeight: 1.2,
+      cursorBlink: true,
+      cursorStyle: "block",
+      theme: EXEC_THEME,
+      allowTransparency: true,
+      scrollback: 5000,
+      convertEol: true,
+    });
+
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    term.loadAddon(new WebLinksAddon());
+    term.open(containerRef.current);
+    fitAddon.fit();
+    termRef.current = term;
+    fitAddonRef.current = fitAddon;
+
+    const ro = new ResizeObserver(() => { try { fitAddon.fit(); } catch {} });
+    ro.observe(containerRef.current);
+
+    const connect = async () => {
+      try {
+        const { sessionId } = await createSession();
+        if (cancelled) return;
+
+        const ws = new WebSocket(buildWsUrl(sessionId));
+        ws.binaryType = "arraybuffer";
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+        };
+
+        ws.onmessage = (evt) => {
+          if (cancelled) return;
+          if (typeof evt.data === "string") {
+            try {
+              const msg = JSON.parse(evt.data);
+              if (msg.type === "connected") {
+                setStatus("Connected");
+                setError(null);
+                term.write("\r\n\x1b[32m▶ Session established\x1b[0m\r\n\r\n");
+                ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+                pingRef.current = setInterval(() => {
+                  if (ws.readyState === WebSocket.OPEN)
+                    ws.send(JSON.stringify({ type: "ping" }));
+                }, 30000);
+              } else if (msg.type === "error") {
+                setStatus("Error");
+                setError(msg.message);
+                term.write(`\r\n\x1b[31m✖ ${msg.message}\x1b[0m\r\n`);
+              } else if (msg.type === "disconnected") {
+                setStatus("Disconnected");
+                term.write("\r\n\x1b[33m◼ Session ended\x1b[0m\r\n");
+              } else if (msg.type !== "pong") {
+                term.write(evt.data);
+              }
+            } catch { term.write(evt.data); }
+          } else {
+            term.write(new Uint8Array(evt.data));
+          }
+        };
+
+        term.onData((data) => {
+          if (ws.readyState === WebSocket.OPEN)
+            ws.send(new TextEncoder().encode(data));
+        });
+        term.onResize(({ cols, rows }) => {
+          if (ws.readyState === WebSocket.OPEN)
+            ws.send(JSON.stringify({ type: "resize", cols, rows }));
+        });
+
+        ws.onerror = () => {
+          if (cancelled) return;
+          setStatus("Error");
+          setError("WebSocket connection failed");
+        };
+        ws.onclose = (evt) => {
+          if (cancelled) return;
+          clearInterval(pingRef.current);
+          setStatus("Disconnected");
+          if (evt.code !== 1000)
+            term.write(`\r\n\x1b[33m◼ Connection closed (${evt.code})\x1b[0m\r\n`);
+        };
+      } catch (err) {
+        if (cancelled) return;
+        setStatus("Error");
+        setError(err.message);
+      }
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      ro.disconnect();
+      clearInterval(pingRef.current);
+      if (wsRef.current) { try { wsRef.current.close(1000); } catch {} wsRef.current = null; }
+      term.dispose();
+      termRef.current = null;
+    };
+  }, [name]); // re-mount when target changes
+
+  const statusColor = status === "Connected" ? "#4caf50"
+    : status.startsWith("Connecting") ? "#ff9800" : "#f44336";
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", backgroundColor: "#0c0c0f", overflow: "hidden" }}>
+      <div style={{ backgroundColor: "#1a1a1f", color: "#fff", padding: "0.4rem 0.85rem",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        fontSize: "0.8rem", borderBottom: "1px solid #2a2a35", flexShrink: 0 }}>
+        <span>
+          <strong>{name}</strong>{" · "}
+          <span style={{ color: statusColor }}>{status}</span>
+          {error && <span style={{ color: "#f44336", marginLeft: "0.75rem" }}>{error}</span>}
+        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#aaa", fontSize: "0.72rem", userSelect: "none" }}>
+            <span style={{ fontSize: "0.8rem" }}>A</span>
+            <input type="range" min="8" max="28" value={fontSize}
+              onChange={(e) => setFontSize(Number(e.target.value))}
+              style={{ width: "72px", accentColor: "#a3ff47", cursor: "pointer" }} />
+            <span style={{ fontSize: "1rem" }}>A</span>
+            <span style={{ minWidth: "1.8rem", textAlign: "right" }}>{fontSize}px</span>
+          </label>
+          <button onClick={disconnect} style={{ padding: "0.2rem 0.6rem", border: "1px solid #555",
+            borderRadius: "4px", backgroundColor: "#333", color: "#fff", cursor: "pointer", fontSize: "0.75rem" }}>
+            Disconnect
+          </button>
+        </div>
+      </div>
+      <div ref={containerRef} style={{ flex: 1, overflow: "hidden", padding: "4px" }} />
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// ActiveTerminalTab — renders the correct terminal for the selected VM tab
 // ---------------------------------------------------------------------------
 const ActiveTerminalTab = ({ vms, activeTab }) => {
   const vm = vms.find((v) => String(v.vmid) === activeTab);
   if (!vm) return null;
+
+  if (vm.type === "docker") {
+    return (
+      <ExecTerminalPanel
+        key={vm.container_id}
+        name={vm.name}
+        createSession={() =>
+          fetch(API_ENDPOINTS.DOCKER_CONTAINER_EXEC_SESSION(vm.container_id), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ shell: "auto" }),
+          }).then((r) => r.json())
+        }
+        buildWsUrl={(sid) => API_ENDPOINTS.DOCKER_CONTAINER_EXEC_WEBSOCKET(sid)}
+      />
+    );
+  }
+
+  if (vm.type === "k8s") {
+    return (
+      <ExecTerminalPanel
+        key={`${vm.namespace}/${vm.pod}`}
+        name={vm.name}
+        createSession={() =>
+          fetch(API_ENDPOINTS.K8S_POD_EXEC_SESSION(vm.namespace, vm.pod), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ shell: "auto" }),
+          }).then((r) => r.json())
+        }
+        buildWsUrl={(sid) => API_ENDPOINTS.K8S_POD_EXEC_WEBSOCKET(sid)}
+      />
+    );
+  }
+
+  // Default: SSH terminal for Proxmox VMs
   return <TerminalPanel key={vm.vmid} vmid={vm.vmid} name={vm.name} />;
 };
 
