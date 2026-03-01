@@ -99,6 +99,15 @@ export const fetchPodLogs = async (namespace, name, tail = 100) => {
   return response.text();
 };
 
+// --- Pod exec session ---
+
+export const createPodExecSession = async (namespace, name, container = '', shell = 'auto') => {
+  return fetchJSON(API_ENDPOINTS.K8S_POD_EXEC_SESSION(namespace, name), {
+    method: 'POST',
+    body: JSON.stringify({ container, shell }),
+  });
+};
+
 // --- Pod actions ---
 
 export const deletePod = async (namespace, name) => {
