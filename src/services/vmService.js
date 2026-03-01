@@ -19,6 +19,9 @@ export const fetchVMs = async (forceRefresh = false) => {
 export const fetchVMDetails = (vmid) =>
   fetchJSON(API_ENDPOINTS.VM_DETAILS(vmid));
 
+export const fetchVMMetrics = (vmid) =>
+  fetchJSON(API_ENDPOINTS.VM_METRICS(vmid));
+
 export const startVM = (vmid) =>
   fetchJSON(API_ENDPOINTS.VM_START(vmid), { method: 'POST' });
 
