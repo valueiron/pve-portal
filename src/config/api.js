@@ -42,6 +42,8 @@ const WS_BASE_URL = getWsBaseUrl();
 export const API_ENDPOINTS = {
   VMS: `${API_BASE_URL}/api/vms`,
   VM_DETAILS: (vmid) => `${API_BASE_URL}/api/vms/${vmid}`,
+  VM_START: (vmid) => `${API_BASE_URL}/api/vms/${vmid}/start`,
+  VM_SHUTDOWN: (vmid) => `${API_BASE_URL}/api/vms/${vmid}/shutdown`,
   VNC_PROXY: (vmid) => `${API_BASE_URL}/api/vms/${vmid}/vncproxy`,
   VNC_WEBSOCKET: (vmid, port, vncticket, node) => {
     const params = new URLSearchParams({ vmid, port, vncticket, node });

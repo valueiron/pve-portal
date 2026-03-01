@@ -192,7 +192,7 @@ const DnsTab = () => {
         try {
             const data = await dns.listBlocklists(customerId);
             setBlocklists(Array.isArray(data) ? data : []);
-        } catch (e) {
+        } catch {
             // non-critical
         }
     };

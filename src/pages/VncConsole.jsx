@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import RFB from "@novnc/novnc/lib/rfb.js";
 import { API_ENDPOINTS } from "../config/api";
 
@@ -62,7 +62,7 @@ const VncConsole = () => {
             if (rfbRef.current) {
                 try {
                     rfbRef.current.disconnect();
-                } catch (e) {
+                } catch {
                     // ignore
                 }
                 rfbRef.current = null;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
     FaPlay, FaStop, FaSyncAlt, FaSearch, FaTh, FaTable, FaDocker,
     FaFileAlt, FaDatabase, FaNetworkWired, FaServer, FaMemory,
@@ -88,7 +88,7 @@ const MetricsModal = ({ container, onClose }) => {
     const isRunning = (container.state || "").toLowerCase() === "running";
     const displayName = (container.names?.[0] || container.id || "unknown").replace(/^\//, "");
 
-    const fetch_ = async () => {
+    const loadMetrics = useCallback(async () => {
         try {
             setError(null);
             const data = await fetchContainerMetrics(container.id);
@@ -98,18 +98,18 @@ const MetricsModal = ({ container, onClose }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [container.id]);
 
     useEffect(() => {
         if (!isRunning) { setLoading(false); return; }
-        fetch_();
-    }, []);
+        loadMetrics();
+    }, [isRunning, loadMetrics]);
 
     useEffect(() => {
         if (!isRunning || !live) return;
-        const id = setInterval(fetch_, 3000);
+        const id = setInterval(loadMetrics, 3000);
         return () => clearInterval(id);
-    }, [live, isRunning]);
+    }, [live, isRunning, loadMetrics]);
 
     // Close on Escape
     useEffect(() => {
@@ -165,7 +165,7 @@ const MetricsModal = ({ container, onClose }) => {
                             </button>
                         )}
                         {isRunning && !live && (
-                            <button onClick={fetch_} style={{
+                            <button onClick={loadMetrics} style={{
                                 padding: "0.3rem 0.7rem", border: "1px solid var(--border-default)",
                                 borderRadius: "6px", background: "transparent",
                                 color: "var(--text-secondary)", cursor: "pointer",
@@ -842,6 +842,8 @@ const ContainerTerminalInner = ({ containerId, shell = "auto" }) => {
             term.dispose();
             termRef.current = null;
         };
+        // fontSize excluded intentionally — a separate effect handles live updates.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [containerId, shell]);
 
     const statusColor = status === "Connected" ? "#4caf50"

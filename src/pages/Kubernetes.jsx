@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
     FaSyncAlt, FaSearch, FaServer, FaCube, FaNetworkWired,
     FaLayerGroup, FaDatabase, FaInfoCircle, FaTrash,
@@ -636,6 +636,8 @@ const PodTerminalInner = ({ namespace, name, container, shell = "auto" }) => {
             term.dispose();
             termRef.current = null;
         };
+        // fontSize excluded intentionally — a separate effect handles live updates.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [namespace, name, container, shell]);
 
     const statusColor = status === "Connected" ? "#4caf50"

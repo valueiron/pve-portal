@@ -4,6 +4,7 @@
  */
 import { API_ENDPOINTS } from '../config/api';
 import { getCachedData, setCachedData, clearCache } from '../utils/cache';
+import fetchJSON from '../utils/fetchJSON';
 
 // ---------------------------------------------------------------------------
 // Repo management
@@ -13,65 +14,35 @@ export const fetchRepos = async (forceRefresh = false) => {
   if (!forceRefresh) {
     const cached = getCachedData(API_ENDPOINTS.LABS_REPOS);
     if (cached !== null) return cached;
-  } else {
-    clearCache(API_ENDPOINTS.LABS_REPOS);
   }
-
-  const response = await fetch(API_ENDPOINTS.LABS_REPOS, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
-  const data = await response.json();
+  const data = await fetchJSON(API_ENDPOINTS.LABS_REPOS);
   const repos = data.repos || [];
   setCachedData(API_ENDPOINTS.LABS_REPOS, repos);
   return repos;
 };
 
 export const addRepo = async (name, url, branch = 'main') => {
-  const response = await fetch(API_ENDPOINTS.LABS_REPOS, {
+  const data = await fetchJSON(API_ENDPOINTS.LABS_REPOS, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, url, branch }),
   });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
-  const data = await response.json();
   clearCache(API_ENDPOINTS.LABS_REPOS);
   clearCache(API_ENDPOINTS.LABS);
   return data.repo;
 };
 
 export const deleteRepo = async (id) => {
-  const response = await fetch(API_ENDPOINTS.LABS_REPO(id), {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
+  const data = await fetchJSON(API_ENDPOINTS.LABS_REPO(id), { method: 'DELETE' });
   clearCache(API_ENDPOINTS.LABS_REPOS);
   clearCache(API_ENDPOINTS.LABS);
-  return await response.json();
+  return data;
 };
 
 export const syncRepo = async (id) => {
-  const response = await fetch(API_ENDPOINTS.LABS_REPO_SYNC(id), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
+  const data = await fetchJSON(API_ENDPOINTS.LABS_REPO_SYNC(id), { method: 'POST' });
   clearCache(API_ENDPOINTS.LABS_REPOS);
   clearCache(API_ENDPOINTS.LABS);
-  return await response.json();
+  return data;
 };
 
 // ---------------------------------------------------------------------------
@@ -82,18 +53,8 @@ export const fetchLabs = async (forceRefresh = false) => {
   if (!forceRefresh) {
     const cached = getCachedData(API_ENDPOINTS.LABS);
     if (cached !== null) return cached;
-  } else {
-    clearCache(API_ENDPOINTS.LABS);
   }
-
-  const response = await fetch(API_ENDPOINTS.LABS, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
-  const data = await response.json();
+  const data = await fetchJSON(API_ENDPOINTS.LABS);
   const labs = data.labs || [];
   setCachedData(API_ENDPOINTS.LABS, labs);
   return labs;
@@ -103,15 +64,7 @@ export const fetchLabDetails = async (id) => {
   const cacheKey = API_ENDPOINTS.LAB(id);
   const cached = getCachedData(cacheKey);
   if (cached !== null) return cached;
-
-  const response = await fetch(cacheKey, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
-  const data = await response.json();
+  const data = await fetchJSON(cacheKey);
   setCachedData(cacheKey, data.lab);
   return data.lab;
 };
@@ -120,62 +73,28 @@ export const fetchLabInstructions = async (id) => {
   const cacheKey = API_ENDPOINTS.LAB_INSTRUCTIONS(id);
   const cached = getCachedData(cacheKey);
   if (cached !== null) return cached;
-
-  const response = await fetch(cacheKey, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
-  const data = await response.json();
-  setCachedData(cacheKey, data.instructions || '');
-  return data.instructions || '';
+  const data = await fetchJSON(cacheKey);
+  const instructions = data.instructions || '';
+  setCachedData(cacheKey, instructions);
+  return instructions;
 };
 
-export const launchLab = async (id, action = 'deploy') => {
-  const response = await fetch(API_ENDPOINTS.LAB_LAUNCH(id), {
+export const launchLab = (id, action = 'deploy') =>
+  fetchJSON(API_ENDPOINTS.LAB_LAUNCH(id), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action }),
   });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
-  return await response.json();
-};
 
-export const fetchLabStatus = async (id) => {
-  const response = await fetch(API_ENDPOINTS.LAB_STATUS(id), {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
-  return await response.json();
-};
+export const fetchLabStatus = (id) =>
+  fetchJSON(API_ENDPOINTS.LAB_STATUS(id));
 
 export const fetchLabVms = async (id) => {
-  const response = await fetch(API_ENDPOINTS.LAB_VMS(id));
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
-  const data = await response.json();
+  const data = await fetchJSON(API_ENDPOINTS.LAB_VMS(id));
   return data.vms || [];
 };
 
-export const registerLabVms = async (id, vms) => {
-  const response = await fetch(API_ENDPOINTS.LAB_VMS(id), {
+export const registerLabVms = (id, vms) =>
+  fetchJSON(API_ENDPOINTS.LAB_VMS(id), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ vms }),
   });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
-  return await response.json();
-};
