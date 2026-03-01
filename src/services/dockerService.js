@@ -3,67 +3,61 @@
  * Handles API calls to the backend for Docker-related operations
  */
 import { API_ENDPOINTS } from '../config/api';
-import { getCachedData, setCachedData, clearCache } from '../utils/cache';
+import { getCachedData, setCachedData } from '../utils/cache';
+import fetchJSON from '../utils/fetchJSON';
 
-const fetchJSON = async (url, options = {}) => {
-  const response = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP error! status: ${response.status}`);
-  }
-  return response.json();
-};
-
-export const fetchContainers = async (forceRefresh = false) => {
+const withCache = async (key, forceRefresh, fetcher) => {
   if (!forceRefresh) {
-    const cached = getCachedData(API_ENDPOINTS.DOCKER_CONTAINERS);
+    const cached = getCachedData(key);
     if (cached !== null) return cached;
-  } else {
-    clearCache(API_ENDPOINTS.DOCKER_CONTAINERS);
   }
-  const data = await fetchJSON(API_ENDPOINTS.DOCKER_CONTAINERS);
-  setCachedData(API_ENDPOINTS.DOCKER_CONTAINERS, data);
+  const data = await fetcher();
+  setCachedData(key, data);
   return data;
 };
 
-export const startContainer = async (id) => {
-  return fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER_START(id), { method: 'POST' });
-};
+export const fetchContainers = (forceRefresh = false) =>
+  withCache(API_ENDPOINTS.DOCKER_CONTAINERS, forceRefresh, () =>
+    fetchJSON(API_ENDPOINTS.DOCKER_CONTAINERS));
 
-export const stopContainer = async (id) => {
-  return fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER_STOP(id), { method: 'POST' });
-};
+export const fetchImages = (forceRefresh = false) =>
+  withCache(API_ENDPOINTS.DOCKER_IMAGES, forceRefresh, () =>
+    fetchJSON(API_ENDPOINTS.DOCKER_IMAGES));
 
-export const restartContainer = async (id) => {
-  return fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER_RESTART(id), { method: 'POST' });
-};
+export const fetchVolumes = (forceRefresh = false) =>
+  withCache(API_ENDPOINTS.DOCKER_VOLUMES, forceRefresh, () =>
+    fetchJSON(API_ENDPOINTS.DOCKER_VOLUMES));
 
-export const fetchContainerMetrics = async (id) => {
-  return fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER_METRICS(id));
-};
+export const fetchDockerNetworks = (forceRefresh = false) =>
+  withCache(API_ENDPOINTS.DOCKER_NETWORKS, forceRefresh, () =>
+    fetchJSON(API_ENDPOINTS.DOCKER_NETWORKS));
 
-export const inspectContainer = async (id) => {
-  return fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER(id));
-};
+export const startContainer = (id) =>
+  fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER_START(id), { method: 'POST' });
 
-export const inspectImage = async (id) => {
-  return fetchJSON(API_ENDPOINTS.DOCKER_IMAGE_INSPECT(id));
-};
+export const stopContainer = (id) =>
+  fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER_STOP(id), { method: 'POST' });
 
-export const inspectVolume = async (name) => {
-  return fetchJSON(API_ENDPOINTS.DOCKER_VOLUME_INSPECT(name));
-};
+export const restartContainer = (id) =>
+  fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER_RESTART(id), { method: 'POST' });
 
-export const inspectNetwork = async (id) => {
-  return fetchJSON(API_ENDPOINTS.DOCKER_NETWORK_INSPECT(id));
-};
+export const fetchContainerMetrics = (id) =>
+  fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER_METRICS(id));
+
+export const inspectContainer = (id) =>
+  fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER(id));
+
+export const inspectImage = (id) =>
+  fetchJSON(API_ENDPOINTS.DOCKER_IMAGE_INSPECT(id));
+
+export const inspectVolume = (name) =>
+  fetchJSON(API_ENDPOINTS.DOCKER_VOLUME_INSPECT(name));
+
+export const inspectNetwork = (id) =>
+  fetchJSON(API_ENDPOINTS.DOCKER_NETWORK_INSPECT(id));
 
 export const fetchContainerLogs = async (id, tail = 100) => {
-  const url = `${API_ENDPOINTS.DOCKER_CONTAINER_LOGS(id)}?tail=${tail}`;
-  const response = await fetch(url);
+  const response = await fetch(`${API_ENDPOINTS.DOCKER_CONTAINER_LOGS(id)}?tail=${tail}`);
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
     throw new Error(err.error || `HTTP error! status: ${response.status}`);
@@ -71,53 +65,14 @@ export const fetchContainerLogs = async (id, tail = 100) => {
   return response.text();
 };
 
-export const fetchImages = async (forceRefresh = false) => {
-  if (!forceRefresh) {
-    const cached = getCachedData(API_ENDPOINTS.DOCKER_IMAGES);
-    if (cached !== null) return cached;
-  } else {
-    clearCache(API_ENDPOINTS.DOCKER_IMAGES);
-  }
-  const data = await fetchJSON(API_ENDPOINTS.DOCKER_IMAGES);
-  setCachedData(API_ENDPOINTS.DOCKER_IMAGES, data);
-  return data;
-};
-
-export const fetchVolumes = async (forceRefresh = false) => {
-  if (!forceRefresh) {
-    const cached = getCachedData(API_ENDPOINTS.DOCKER_VOLUMES);
-    if (cached !== null) return cached;
-  } else {
-    clearCache(API_ENDPOINTS.DOCKER_VOLUMES);
-  }
-  const data = await fetchJSON(API_ENDPOINTS.DOCKER_VOLUMES);
-  setCachedData(API_ENDPOINTS.DOCKER_VOLUMES, data);
-  return data;
-};
-
-export const fetchDockerNetworks = async (forceRefresh = false) => {
-  if (!forceRefresh) {
-    const cached = getCachedData(API_ENDPOINTS.DOCKER_NETWORKS);
-    if (cached !== null) return cached;
-  } else {
-    clearCache(API_ENDPOINTS.DOCKER_NETWORKS);
-  }
-  const data = await fetchJSON(API_ENDPOINTS.DOCKER_NETWORKS);
-  setCachedData(API_ENDPOINTS.DOCKER_NETWORKS, data);
-  return data;
-};
-
-export const createContainerExecSession = async (id, shell = 'auto') => {
-  return fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER_EXEC_SESSION(id), {
+export const createContainerExecSession = (id, shell = 'auto') =>
+  fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER_EXEC_SESSION(id), {
     method: 'POST',
     body: JSON.stringify({ shell }),
   });
-};
 
-export const fetchSystemInfo = async () => {
-  return fetchJSON(API_ENDPOINTS.DOCKER_SYSTEM_INFO);
-};
+export const fetchSystemInfo = () =>
+  fetchJSON(API_ENDPOINTS.DOCKER_SYSTEM_INFO);
 
-export const fetchSystemDisk = async () => {
-  return fetchJSON(API_ENDPOINTS.DOCKER_SYSTEM_DISK);
-};
+export const fetchSystemDisk = () =>
+  fetchJSON(API_ENDPOINTS.DOCKER_SYSTEM_DISK);

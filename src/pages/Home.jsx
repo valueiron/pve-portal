@@ -1,4 +1,3 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import {
   FaServer,
@@ -65,11 +64,11 @@ const Home = () => {
                 </p>
             </div>
             <div className="home-grid">
-                {sections.map((section, index) => {
+                {sections.map((section) => {
                     const Icon = section.icon;
                     return (
                         <Link
-                            key={index}
+                            key={section.path}
                             to={section.path}
                             className="home-card"
                             style={{ '--card-accent': section.accent }}

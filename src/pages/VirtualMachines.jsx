@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FaPowerOff, FaPlay, FaSearch, FaSyncAlt, FaTh, FaTable, FaTerminal } from "react-icons/fa";
 import "./Page.css";
 import { fetchVMs, startVM, shutdownVM, createVNCProxy } from "../services/vmService";
@@ -731,11 +731,6 @@ const VirtualMachines = () => {
                                     let iconSrc = "/Proxmox.png";
                                     if (isAzure) iconSrc = "/Azure.png";
                                     else if (isAWS) iconSrc = "/AWS.png";
-                                    
-                                    // Determine node label
-                                    let nodeLabel = "Node";
-                                    if (isAzure) nodeLabel = "Resource Group";
-                                    else if (isAWS) nodeLabel = "Availability Zone";
                                     
                                     return (
                                         <tr key={`${vmType}-${vm.node}-${vm.vmid}`}>

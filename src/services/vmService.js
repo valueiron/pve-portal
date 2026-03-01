@@ -3,177 +3,30 @@
  * Handles API calls to the backend for VM-related operations
  */
 import { API_ENDPOINTS } from '../config/api';
-import { getCachedData, setCachedData, clearCache } from '../utils/cache';
+import { getCachedData, setCachedData } from '../utils/cache';
+import fetchJSON from '../utils/fetchJSON';
 
-/**
- * Fetch all VMs from the backend
- * @param {boolean} forceRefresh - If true, bypass cache and fetch fresh data
- * @returns {Promise<Array>} Array of VM objects
- */
 export const fetchVMs = async (forceRefresh = false) => {
-  // Check cache first unless force refresh is requested
   if (!forceRefresh) {
-    const cachedData = getCachedData(API_ENDPOINTS.VMS);
-    if (cachedData !== null) {
-      return cachedData;
-    }
-  } else {
-    // Clear cache if forcing refresh
-    clearCache(API_ENDPOINTS.VMS);
+    const cached = getCachedData(API_ENDPOINTS.VMS);
+    if (cached !== null) return cached;
   }
-
-  try {
-    const response = await fetch(API_ENDPOINTS.VMS, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const vms = data.vms || [];
-    
-    // Store in cache
-    setCachedData(API_ENDPOINTS.VMS, vms);
-    
-    return vms;
-  } catch (error) {
-    console.error('Error fetching VMs:', error);
-    throw error;
-  }
+  const vms = (await fetchJSON(API_ENDPOINTS.VMS)).vms ?? [];
+  setCachedData(API_ENDPOINTS.VMS, vms);
+  return vms;
 };
 
-/**
- * Fetch detailed information about a specific VM
- * @param {number} vmid - Virtual Machine ID
- * @returns {Promise<Object>} VM details object
- */
-export const fetchVMDetails = async (vmid) => {
-  try {
-    const response = await fetch(API_ENDPOINTS.VM_DETAILS(vmid), {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+export const fetchVMDetails = (vmid) =>
+  fetchJSON(API_ENDPOINTS.VM_DETAILS(vmid));
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
+export const startVM = (vmid) =>
+  fetchJSON(API_ENDPOINTS.VM_START(vmid), { method: 'POST' });
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error(`Error fetching VM ${vmid} details:`, error);
-    throw error;
-  }
-};
+export const shutdownVM = (vmid) =>
+  fetchJSON(API_ENDPOINTS.VM_SHUTDOWN(vmid), { method: 'POST' });
 
-/**
- * Start a virtual machine
- * @param {number} vmid - Virtual Machine ID
- * @returns {Promise<Object>} Response data
- */
-export const startVM = async (vmid) => {
-  try {
-    const response = await fetch(`${API_ENDPOINTS.VM_DETAILS(vmid)}/start`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+export const createVNCProxy = (vmid) =>
+  fetchJSON(API_ENDPOINTS.VNC_PROXY(vmid), { method: 'POST' });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error(`Error starting VM ${vmid}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Create a VNC proxy ticket for a Proxmox VM
- * @param {number} vmid - Virtual Machine ID
- * @returns {Promise<Object>} VNC proxy info (ticket, port, node)
- */
-export const createVNCProxy = async (vmid) => {
-  try {
-    const response = await fetch(API_ENDPOINTS.VNC_PROXY(vmid), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error(`Error creating VNC proxy for VM ${vmid}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Create an SSH terminal session for a VM
- * @param {number} vmid - Virtual Machine ID
- * @returns {Promise<Object>} Session info including sessionId and ip
- */
-export const createTerminalSession = async (vmid) => {
-  try {
-    const response = await fetch(API_ENDPOINTS.TERMINAL_SESSION(vmid), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error(`Error creating terminal session for VM ${vmid}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Shutdown a virtual machine
- * @param {number} vmid - Virtual Machine ID
- * @returns {Promise<Object>} Response data
- */
-export const shutdownVM = async (vmid) => {
-  try {
-    const response = await fetch(`${API_ENDPOINTS.VM_DETAILS(vmid)}/shutdown`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error(`Error shutting down VM ${vmid}:`, error);
-    throw error;
-  }
-};
+export const createTerminalSession = (vmid) =>
+  fetchJSON(API_ENDPOINTS.TERMINAL_SESSION(vmid), { method: 'POST' });

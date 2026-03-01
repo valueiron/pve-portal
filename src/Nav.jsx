@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   FaServer,
@@ -14,7 +14,17 @@ import {
 import { SiKubernetes, SiDocker } from "react-icons/si";
 import "./Nav.css";
 
-let Nav = () => {
+const NAV_ITEMS = [
+    { name: "Virtual Machines", icon: FaServer, path: "/virtual-machines" },
+    { name: "Storage", icon: FaHdd, path: "/storage" },
+    { name: "Networking", icon: FaNetworkWired, path: "/networking" },
+    { name: "Kubernetes", icon: SiKubernetes, path: "/kubernetes" },
+    { name: "Docker", icon: SiDocker, path: "/docker" },
+    { name: "Labs", icon: FaFlask, path: "/labs" },
+    { name: "VyOS", icon: FaSitemap, path: "/vyos" },
+];
+
+const Nav = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const location = useLocation();
@@ -44,16 +54,6 @@ let Nav = () => {
     useEffect(() => {
         setIsMobileOpen(false);
     }, [location.pathname]);
-
-    const navItems = [
-        { name: "Virtual Machines", icon: FaServer, path: "/virtual-machines" },
-        { name: "Storage", icon: FaHdd, path: "/storage" },
-        { name: "Networking", icon: FaNetworkWired, path: "/networking" },
-        { name: "Kubernetes", icon: SiKubernetes, path: "/kubernetes" },
-        { name: "Docker", icon: SiDocker, path: "/docker" },
-        { name: "Labs", icon: FaFlask, path: "/labs" },
-        { name: "VyOS", icon: FaSitemap, path: "/vyos" },
-    ];
 
     return (
         <>
@@ -86,11 +86,11 @@ let Nav = () => {
                 </button>
 
                 <ul className="nav-list">
-                    {navItems.map((item, index) => {
+                    {NAV_ITEMS.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
                         return (
-                            <li key={index} className="nav-item">
+                            <li key={item.path} className="nav-item">
                                 <Link
                                     to={item.path}
                                     className={`nav-link ${isActive ? 'nav-link-active' : ''}`}

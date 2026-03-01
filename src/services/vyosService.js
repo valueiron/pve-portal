@@ -11,7 +11,7 @@ const jsonFetch = async (url, options = {}) => {
     try {
       const body = await response.json();
       errMsg = body.error || errMsg;
-    } catch (_) {}
+    } catch {}
     throw new Error(errMsg);
   }
   if (response.status === 204) return null;
@@ -23,8 +23,6 @@ const cachedFetch = async (key, forceRefresh) => {
   if (!forceRefresh) {
     const cached = getCachedData(key);
     if (cached !== null) return cached;
-  } else {
-    clearCache(key);
   }
   const data = await jsonFetch(key);
   setCachedData(key, data);

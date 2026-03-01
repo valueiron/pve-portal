@@ -205,7 +205,6 @@ const Storage = () => {
     };
 
     const renderResourceCard = (resource) => {
-        const isAzure = resource.type === 'azure';
         const isAWS = resource.type === 'aws';
         const isProxmox = resource.type === 'proxmox';
         
@@ -741,7 +740,6 @@ const Storage = () => {
                             </thead>
                             <tbody>
                                 {filteredResources.map((resource) => {
-                                    const isAzure = resource.type === 'azure';
                                     const isAWS = resource.type === 'aws';
                                     const isProxmox = resource.type === 'proxmox';
                                     

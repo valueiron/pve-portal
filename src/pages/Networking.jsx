@@ -217,9 +217,8 @@ const Networking = () => {
     };
 
     const renderResourceCard = (resource) => {
-        const isAzure = resource.type === 'azure';
         const isAWS = resource.type === 'aws';
-        
+
         // Determine icon source
         let iconSrc = "/Azure.png";
         if (isAWS) iconSrc = "/AWS.png";
@@ -804,9 +803,8 @@ const Networking = () => {
                             </thead>
                             <tbody>
                                 {filteredResources.map((resource) => {
-                                    const isAzure = resource.type === 'azure';
                                     const isAWS = resource.type === 'aws';
-                                    
+
                                     // Determine icon source
                                     let iconSrc = "/Azure.png";
                                     if (isAWS) iconSrc = "/AWS.png";
