@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import { FaSearch, FaSyncAlt, FaTh, FaTable } from "react-icons/fa";
 import "./Page.css";
 import { fetchStorage } from "../services/storageService";
+import proxmoxIcon from "../assets/Proxmox.png";
+import azureIcon from "../assets/Azure.png";
+import awsIcon from "../assets/AWS.png";
 
 const Storage = () => {
     const [storage, setStorage] = useState({
@@ -209,9 +212,9 @@ const Storage = () => {
         const isProxmox = resource.type === 'proxmox';
         
         // Determine icon source
-        let iconSrc = "/Azure.png";
-        if (isAWS) iconSrc = "/AWS.png";
-        if (isProxmox) iconSrc = "/Proxmox.png";
+        let iconSrc = azureIcon;
+        if (isAWS) iconSrc = awsIcon;
+        if (isProxmox) iconSrc = proxmoxIcon;
 
         return (
             <div key={`${resource.type}-${resource.resource_type}-${resource.id}`} className="page-card">
@@ -744,9 +747,9 @@ const Storage = () => {
                                     const isProxmox = resource.type === 'proxmox';
                                     
                                     // Determine icon source
-                                    let iconSrc = "/Azure.png";
-                                    if (isAWS) iconSrc = "/AWS.png";
-                                    if (isProxmox) iconSrc = "/Proxmox.png";
+                                    let iconSrc = azureIcon;
+                                    if (isAWS) iconSrc = awsIcon;
+                                    if (isProxmox) iconSrc = proxmoxIcon;
 
                                     // Build details column based on resource type
                                     let details = [];

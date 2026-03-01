@@ -2,6 +2,9 @@ import { useState, useEffect, useMemo } from "react";
 import { FaPowerOff, FaPlay, FaSearch, FaSyncAlt, FaTh, FaTable, FaTerminal } from "react-icons/fa";
 import "./Page.css";
 import { fetchVMs, startVM, shutdownVM, createVNCProxy } from "../services/vmService";
+import proxmoxIcon from "../assets/Proxmox.png";
+import azureIcon from "../assets/Azure.png";
+import awsIcon from "../assets/AWS.png";
 
 const VirtualMachines = () => {
     const [vms, setVms] = useState([]);
@@ -497,9 +500,9 @@ const VirtualMachines = () => {
                             const isAWS = vmType === 'aws';
                             
                             // Determine icon source
-                            let iconSrc = "/Proxmox.png";
-                            if (isAzure) iconSrc = "/Azure.png";
-                            else if (isAWS) iconSrc = "/AWS.png";
+                            let iconSrc = proxmoxIcon;
+                            if (isAzure) iconSrc = azureIcon;
+                            else if (isAWS) iconSrc = awsIcon;
                             
                             // Determine node label
                             let nodeLabel = "Node";
@@ -728,9 +731,9 @@ const VirtualMachines = () => {
                                     const isAWS = vmType === 'aws';
                                     
                                     // Determine icon source
-                                    let iconSrc = "/Proxmox.png";
-                                    if (isAzure) iconSrc = "/Azure.png";
-                                    else if (isAWS) iconSrc = "/AWS.png";
+                                    let iconSrc = proxmoxIcon;
+                                    if (isAzure) iconSrc = azureIcon;
+                                    else if (isAWS) iconSrc = awsIcon;
                                     
                                     return (
                                         <tr key={`${vmType}-${vm.node}-${vm.vmid}`}>
