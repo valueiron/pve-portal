@@ -233,11 +233,50 @@ const ExecTerminalPanel = ({ name, createSession, buildWsUrl }) => {
 };
 
 // ---------------------------------------------------------------------------
+// CodeServerPanel — renders an iframe embedding the code-server VS Code UI
+// ---------------------------------------------------------------------------
+const CodeServerPanel = ({ vm }) => {
+  const url = vm.proxy_path || "/codeserver/";
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", backgroundColor: "#1e1e1e", overflow: "hidden" }}>
+      <div style={{
+        backgroundColor: "#1a1a1f", color: "#fff", padding: "0.4rem 0.85rem",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        fontSize: "0.8rem", borderBottom: "1px solid #2a2a35", flexShrink: 0,
+      }}>
+        <span><strong>VS Code Server</strong></span>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            padding: "0.2rem 0.6rem", border: "1px solid #555", borderRadius: "4px",
+            backgroundColor: "#333", color: "#fff", textDecoration: "none", fontSize: "0.75rem",
+          }}
+        >
+          Open in New Tab ↗
+        </a>
+      </div>
+      <iframe
+        src={url}
+        style={{ flex: 1, border: "none", width: "100%", height: "100%" }}
+        title="VS Code Server"
+        allow="clipboard-read; clipboard-write"
+      />
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // ActiveTerminalTab — renders the correct terminal for the selected VM tab
 // ---------------------------------------------------------------------------
 const ActiveTerminalTab = ({ vms, activeTab }) => {
   const vm = vms.find((v) => String(v.vmid) === activeTab);
   if (!vm) return null;
+
+  if (vm.type === "codeserver") {
+    return <CodeServerPanel key={vm.vmid} vm={vm} />;
+  }
 
   if (vm.type === "docker") {
     return (
