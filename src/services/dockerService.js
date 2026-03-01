@@ -107,6 +107,13 @@ export const fetchDockerNetworks = async (forceRefresh = false) => {
   return data;
 };
 
+export const createContainerExecSession = async (id, shell = 'auto') => {
+  return fetchJSON(API_ENDPOINTS.DOCKER_CONTAINER_EXEC_SESSION(id), {
+    method: 'POST',
+    body: JSON.stringify({ shell }),
+  });
+};
+
 export const fetchSystemInfo = async () => {
   return fetchJSON(API_ENDPOINTS.DOCKER_SYSTEM_INFO);
 };

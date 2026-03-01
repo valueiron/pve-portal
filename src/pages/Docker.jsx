@@ -1,15 +1,21 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
     FaPlay, FaStop, FaSyncAlt, FaSearch, FaTh, FaTable, FaDocker,
     FaFileAlt, FaDatabase, FaNetworkWired, FaServer, FaMemory,
-    FaMicrochip, FaHdd, FaCube, FaLayerGroup, FaInfoCircle
+    FaMicrochip, FaHdd, FaCube, FaLayerGroup, FaInfoCircle, FaCode
 } from "react-icons/fa";
+import { Terminal } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
+import { WebLinksAddon } from "@xterm/addon-web-links";
+import "@xterm/xterm/css/xterm.css";
 import "./Page.css";
+import { API_ENDPOINTS } from "../config/api";
 import {
     fetchContainers, startContainer, stopContainer, restartContainer,
     fetchContainerLogs, fetchContainerMetrics,
     inspectContainer, inspectImage, inspectVolume, inspectNetwork,
-    fetchImages, fetchVolumes, fetchDockerNetworks, fetchSystemInfo, fetchSystemDisk
+    fetchImages, fetchVolumes, fetchDockerNetworks, fetchSystemInfo, fetchSystemDisk,
+    createContainerExecSession
 } from "../services/dockerService";
 
 const TABS = ["Containers", "Images", "Volumes", "Networks", "System"];
@@ -692,6 +698,249 @@ const InspectModal = ({ type, name, data, onClose }) => {
     );
 };
 
+// ── Container Exec Terminal ────────────────────────────────────────────────────
+
+const DOCKER_EXEC_THEME = {
+    background: "#0c0c0f", foreground: "#c8d0e0", cursor: "#a3ff47",
+    cursorAccent: "#0c0c0f", black: "#000000", red: "#ff4444", green: "#44cc44",
+    yellow: "#dddd00", blue: "#4488cc", magenta: "#aa44cc", cyan: "#44aacc",
+    white: "#c8d0e0", brightBlack: "#444444", brightRed: "#ff8888",
+    brightGreen: "#88ee88", brightYellow: "#eeee44", brightBlue: "#88aadd",
+    brightMagenta: "#cc88ee", brightCyan: "#88ccdd", brightWhite: "#ffffff",
+    selectionBackground: "rgba(163,255,71,0.25)",
+};
+
+// Inner terminal component — connects to a container exec session via WebSocket.
+const ContainerTerminalInner = ({ containerId, shell = "auto" }) => {
+    const containerRef = useRef(null);
+    const termRef = useRef(null);
+    const fitAddonRef = useRef(null);
+    const wsRef = useRef(null);
+    const pingRef = useRef(null);
+
+    const [status, setStatus] = useState("Connecting…");
+    const [error, setError] = useState(null);
+    const [fontSize, setFontSize] = useState(13);
+
+    useEffect(() => {
+        if (!termRef.current) return;
+        termRef.current.options.fontSize = fontSize;
+        try { fitAddonRef.current?.fit(); } catch {}
+    }, [fontSize]);
+
+    const disconnect = useCallback(() => {
+        clearInterval(pingRef.current);
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.close(1000);
+        }
+    }, []);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const term = new Terminal({
+            fontFamily: '"JetBrains Mono","Cascadia Code","IBM Plex Mono",monospace',
+            fontSize,
+            lineHeight: 1.2,
+            cursorBlink: true,
+            cursorStyle: "block",
+            theme: DOCKER_EXEC_THEME,
+            allowTransparency: true,
+            scrollback: 5000,
+            convertEol: true,
+        });
+
+        const fitAddon = new FitAddon();
+        term.loadAddon(fitAddon);
+        term.loadAddon(new WebLinksAddon());
+        term.open(containerRef.current);
+        fitAddon.fit();
+        termRef.current = term;
+        fitAddonRef.current = fitAddon;
+
+        const ro = new ResizeObserver(() => { try { fitAddon.fit(); } catch {} });
+        ro.observe(containerRef.current);
+
+        const connect = async () => {
+            try {
+                const { sessionId } = await createContainerExecSession(containerId, shell);
+                if (cancelled) return;
+
+                const ws = new WebSocket(API_ENDPOINTS.DOCKER_CONTAINER_EXEC_WEBSOCKET(sessionId));
+                ws.binaryType = "arraybuffer";
+                wsRef.current = ws;
+
+                ws.onopen = () => {
+                    ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+                };
+
+                ws.onmessage = (evt) => {
+                    if (cancelled) return;
+                    if (typeof evt.data === "string") {
+                        try {
+                            const msg = JSON.parse(evt.data);
+                            if (msg.type === "connected") {
+                                setStatus("Connected");
+                                setError(null);
+                                term.write("\r\n\x1b[32m▶ Session established\x1b[0m\r\n\r\n");
+                                ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+                                pingRef.current = setInterval(() => {
+                                    if (ws.readyState === WebSocket.OPEN)
+                                        ws.send(JSON.stringify({ type: "ping" }));
+                                }, 30000);
+                            } else if (msg.type === "error") {
+                                setStatus("Error");
+                                setError(msg.message);
+                                term.write(`\r\n\x1b[31m✖ ${msg.message}\x1b[0m\r\n`);
+                            } else if (msg.type === "disconnected") {
+                                setStatus("Disconnected");
+                                term.write("\r\n\x1b[33m◼ Session ended\x1b[0m\r\n");
+                            } else if (msg.type !== "pong") {
+                                term.write(evt.data);
+                            }
+                        } catch { term.write(evt.data); }
+                    } else {
+                        term.write(new Uint8Array(evt.data));
+                    }
+                };
+
+                term.onData((data) => {
+                    if (ws.readyState === WebSocket.OPEN)
+                        ws.send(new TextEncoder().encode(data));
+                });
+                term.onResize(({ cols, rows }) => {
+                    if (ws.readyState === WebSocket.OPEN)
+                        ws.send(JSON.stringify({ type: "resize", cols, rows }));
+                });
+
+                ws.onerror = () => {
+                    if (cancelled) return;
+                    setStatus("Error");
+                    setError("WebSocket connection failed");
+                };
+                ws.onclose = (evt) => {
+                    if (cancelled) return;
+                    clearInterval(pingRef.current);
+                    setStatus("Disconnected");
+                    if (evt.code !== 1000)
+                        term.write(`\r\n\x1b[33m◼ Connection closed (${evt.code})\x1b[0m\r\n`);
+                };
+            } catch (err) {
+                if (cancelled) return;
+                setStatus("Error");
+                setError(err.message);
+            }
+        };
+
+        connect();
+
+        return () => {
+            cancelled = true;
+            ro.disconnect();
+            clearInterval(pingRef.current);
+            if (wsRef.current) { try { wsRef.current.close(1000); } catch {} wsRef.current = null; }
+            term.dispose();
+            termRef.current = null;
+        };
+    }, [containerId, shell]);
+
+    const statusColor = status === "Connected" ? "#4caf50"
+        : status.startsWith("Connecting") ? "#ff9800" : "#f44336";
+
+    return (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{
+                backgroundColor: "#1a1a1f", color: "#fff", padding: "0.35rem 0.85rem",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                fontSize: "0.78rem", borderBottom: "1px solid #2a2a35", flexShrink: 0,
+            }}>
+                <span>
+                    <span style={{ color: statusColor }}>{status}</span>
+                    {error && <span style={{ color: "#f44336", marginLeft: "0.75rem" }}>{error}</span>}
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "0.4rem",
+                        color: "#aaa", fontSize: "0.72rem", userSelect: "none" }}>
+                        <span style={{ fontSize: "0.8rem" }}>A</span>
+                        <input type="range" min="8" max="28" value={fontSize}
+                            onChange={e => setFontSize(Number(e.target.value))}
+                            style={{ width: "72px", accentColor: "#a3ff47", cursor: "pointer" }} />
+                        <span style={{ fontSize: "1rem" }}>A</span>
+                        <span style={{ minWidth: "1.8rem", textAlign: "right" }}>{fontSize}px</span>
+                    </label>
+                    <button onClick={disconnect} style={{
+                        padding: "0.2rem 0.6rem", border: "1px solid #555", borderRadius: "4px",
+                        backgroundColor: "#333", color: "#fff", cursor: "pointer", fontSize: "0.75rem",
+                    }}>Disconnect</button>
+                </div>
+            </div>
+            <div ref={containerRef} style={{ flex: 1, overflow: "hidden", padding: "4px" }} />
+        </div>
+    );
+};
+
+// Full-screen overlay modal for container exec terminal.
+const ContainerTerminalModal = ({ container, onClose }) => {
+    const name = (container.names?.[0] || container.id || "").replace(/^\//, "");
+    const [shell, setShell] = useState("auto");
+
+    useEffect(() => {
+        const h = (e) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", h);
+        return () => window.removeEventListener("keydown", h);
+    }, [onClose]);
+
+    const selectStyle = {
+        padding: "0.2rem 0.5rem", background: "#1e1e2e",
+        border: "1px solid #444", borderRadius: "4px",
+        color: "#ccc", fontSize: "0.8rem", cursor: "pointer",
+    };
+
+    return (
+        <div onClick={onClose} style={{
+            position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.75)",
+            zIndex: 1100, display: "flex", alignItems: "center",
+            justifyContent: "center", padding: "1rem",
+        }}>
+            <div onClick={e => e.stopPropagation()} style={{
+                background: "#0c0c0f", border: "1px solid #2a2a35",
+                borderRadius: "12px", width: "92vw", height: "85vh",
+                display: "flex", flexDirection: "column",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.6)", overflow: "hidden",
+            }}>
+                <div style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "0.6rem 1rem", borderBottom: "1px solid #2a2a35",
+                    background: "#12121a", flexShrink: 0,
+                }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.65rem", flexWrap: "wrap" }}>
+                        <FaCode style={{ color: "#a3ff47" }} />
+                        <span style={{ fontWeight: "700", color: "#fff", fontSize: "0.95rem" }}>
+                            {name}
+                        </span>
+                        <select value={shell} onChange={e => setShell(e.target.value)} style={selectStyle}
+                            title="Shell: Auto tries bash then sh; Bash skips sh fallback; Sh is minimal">
+                            <option value="auto">Shell: Auto</option>
+                            <option value="bash">Shell: Bash</option>
+                            <option value="sh">Shell: Sh</option>
+                        </select>
+                    </div>
+                    <button onClick={onClose} style={{
+                        background: "none", border: "none", color: "#888",
+                        cursor: "pointer", fontSize: "1.1rem", lineHeight: 1, padding: "0.2rem",
+                    }}>✕</button>
+                </div>
+                {/* Re-mounts when shell changes */}
+                <ContainerTerminalInner
+                    key={`${container.id}/${shell}`}
+                    containerId={container.id}
+                    shell={shell}
+                />
+            </div>
+        </div>
+    );
+};
+
 // ── Containers Tab ────────────────────────────────────────────────────────────
 
 const ContainersTab = () => {
@@ -707,6 +956,7 @@ const ContainersTab = () => {
     const [metricsModal, setMetricsModal] = useState(null); // container object
     const [inspectModal, setInspectModal] = useState(null); // { name, data }
     const [inspectLoading, setInspectLoading] = useState({});
+    const [execModal, setExecModal] = useState(null); // container object
 
     const load = async (forceRefresh = false) => {
         try {
@@ -781,6 +1031,11 @@ const ContainersTab = () => {
 
     return (
         <>
+            {/* Exec Terminal Modal */}
+            {execModal && (
+                <ContainerTerminalModal container={execModal} onClose={() => setExecModal(null)} />
+            )}
+
             {/* Metrics Modal */}
             {metricsModal && (
                 <MetricsModal container={metricsModal} onClose={() => setMetricsModal(null)} />
@@ -929,6 +1184,12 @@ const ContainersTab = () => {
                                     style={actionBtn("#607d8b", inspectLoading[c.id])}>
                                     <FaInfoCircle size={14} />
                                 </button>
+                                {c.state === "running" && (
+                                    <button onClick={() => setExecModal(c)} title="Exec Shell"
+                                        style={actionBtn("#9c27b0", false)}>
+                                        <FaCode size={14} />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1002,6 +1263,12 @@ const ContainersTab = () => {
                                                 style={actionBtn("#607d8b", inspectLoading[c.id])}>
                                                 <FaInfoCircle size={12} />
                                             </button>
+                                            {c.state === "running" && (
+                                                <button onClick={() => setExecModal(c)} title="Exec Shell"
+                                                    style={actionBtn("#9c27b0", false)}>
+                                                    <FaCode size={12} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
