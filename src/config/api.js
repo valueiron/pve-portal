@@ -68,6 +68,9 @@ export const API_ENDPOINTS = {
   DOCKER_NETWORK_INSPECT: (id) => `${API_BASE_URL}/api/docker/networks/${encodeURIComponent(id)}`,
   DOCKER_SYSTEM_INFO: `${API_BASE_URL}/api/docker/system/info`,
   DOCKER_SYSTEM_DISK: `${API_BASE_URL}/api/docker/system/disk`,
+  DOCKER_CONTAINER_EXEC_SESSION: (id) => `${API_BASE_URL}/api/docker/containers/${id}/exec`,
+  DOCKER_CONTAINER_EXEC_WEBSOCKET: (sessionId) =>
+    `${WS_BASE_URL}/ws/docker-exec?sessionId=${encodeURIComponent(sessionId)}`,
 
   // Kubernetes endpoints
   K8S_PODS: `${API_BASE_URL}/api/k8s/pods`,
