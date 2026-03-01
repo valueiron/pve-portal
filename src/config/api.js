@@ -75,6 +75,9 @@ export const API_ENDPOINTS = {
   K8S_POD_LOGS: (ns, name) => `${API_BASE_URL}/api/k8s/pods/${ns}/${name}/logs`,
   K8S_POD_METRICS: (ns, name) => `${API_BASE_URL}/api/k8s/pods/${ns}/${name}/metrics`,
   K8S_POD_RESTART: (ns, name) => `${API_BASE_URL}/api/k8s/pods/${ns}/${name}/restart`,
+  K8S_POD_EXEC_SESSION: (ns, name) => `${API_BASE_URL}/api/k8s/pods/${ns}/${name}/exec`,
+  K8S_POD_EXEC_WEBSOCKET: (sessionId) =>
+    `${WS_BASE_URL}/ws/k8s-exec?sessionId=${encodeURIComponent(sessionId)}`,
   K8S_DEPLOYMENTS: `${API_BASE_URL}/api/k8s/deployments`,
   K8S_DEPLOYMENT: (ns, name) => `${API_BASE_URL}/api/k8s/deployments/${ns}/${name}`,
   K8S_DEPLOYMENT_SCALE: (ns, name) => `${API_BASE_URL}/api/k8s/deployments/${ns}/${name}/scale`,
