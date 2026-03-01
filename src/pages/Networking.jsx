@@ -3,6 +3,8 @@ import { FaSearch, FaSyncAlt, FaTh, FaTable } from "react-icons/fa";
 import "./Page.css";
 import { fetchNetworking } from "../services/networkingService";
 import DnsTab from "./DnsTab";
+import azureIcon from "../assets/Azure.png";
+import awsIcon from "../assets/AWS.png";
 
 const Networking = () => {
     const [networking, setNetworking] = useState({
@@ -220,8 +222,8 @@ const Networking = () => {
         const isAWS = resource.type === 'aws';
 
         // Determine icon source
-        let iconSrc = "/Azure.png";
-        if (isAWS) iconSrc = "/AWS.png";
+        let iconSrc = azureIcon;
+        if (isAWS) iconSrc = awsIcon;
 
         return (
             <div key={`${resource.type}-${resource.resource_type}-${resource.id}`} className="page-card">
@@ -806,8 +808,8 @@ const Networking = () => {
                                     const isAWS = resource.type === 'aws';
 
                                     // Determine icon source
-                                    let iconSrc = "/Azure.png";
-                                    if (isAWS) iconSrc = "/AWS.png";
+                                    let iconSrc = azureIcon;
+                                    if (isAWS) iconSrc = awsIcon;
 
                                     // Build details column based on resource type
                                     let details = [];
