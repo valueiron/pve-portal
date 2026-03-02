@@ -425,6 +425,226 @@
   color: var(--text-secondary);
 }
 
+/* ---- Check button ---- */
+.labview-check-btn {
+  padding: 0.4rem 0.9rem;
+  background-color: transparent;
+  color: var(--accent-primary, #06b6d4);
+  border: 1px solid var(--accent-primary, #06b6d4);
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background-color 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.labview-check-btn:hover:not(:disabled) {
+  background-color: rgba(6, 182, 212, 0.1);
+}
+
+.labview-check-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- Validation banner ---- */
+.labview-validation-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  flex-shrink: 0;
+  animation: labview-banner-in 0.2s ease-out;
+}
+
+@keyframes labview-banner-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.labview-validation-banner--pass {
+  background-color: #f0fdf4;
+  border-bottom: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.labview-validation-banner--fail {
+  background-color: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+[data-theme="dark"] .labview-validation-banner--pass {
+  background-color: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+[data-theme="dark"] .labview-validation-banner--fail {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.labview-validation-banner-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.labview-validation-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.labview-validation-banner-output {
+  opacity: 0.8;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labview-validation-banner-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.2rem;
+  color: inherit;
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.labview-validation-banner-close:hover { opacity: 1; }
+
+/* ---- Tips / Solutions sections in the left pane ---- */
+.labview-hints-section {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.labview-hints-details {
+  /* reset browser default */
+}
+
+.labview-hints-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-secondary);
+  list-style: none;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.labview-hints-summary::-webkit-details-marker { display: none; }
+
+.labview-hints-summary::before {
+  content: "▶";
+  font-size: 0.6rem;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+details[open] > .labview-hints-summary::before {
+  transform: rotate(90deg);
+}
+
+.labview-hints-summary:hover {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.labview-hints-summary--tips { color: #d97706; }
+.labview-hints-summary--tips:hover { color: #b45309; }
+
+[data-theme="dark"] .labview-hints-summary--tips { color: #fbbf24; }
+[data-theme="dark"] .labview-hints-summary--tips:hover { color: #fcd34d; }
+
+.labview-hints-summary--solutions { color: var(--accent-primary, #06b6d4); }
+.labview-hints-summary--solutions:hover { opacity: 0.85; }
+
+.labview-hints-icon { font-size: 0.9rem; }
+.labview-hints-count { opacity: 0.65; font-weight: 400; }
+
+.labview-hints-body {
+  padding: 0 1.5rem 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+
+.labview-hint-item {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.labview-hint-item:last-child { border-bottom: none; }
+
+.labview-hint-title {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+/* Nested solution spoilers */
+.labview-solution-item {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md, 6px);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.labview-solution-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-secondary);
+  background-color: var(--bg-surface-2);
+  list-style: none;
+  transition: background-color 0.12s;
+}
+
+.labview-solution-summary::-webkit-details-marker { display: none; }
+
+.labview-solution-summary::before {
+  content: "▶";
+  font-size: 0.55rem;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+details[open] > .labview-solution-summary::before {
+  transform: rotate(90deg);
+}
+
+.labview-solution-summary:hover {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.labview-solution-body {
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.65;
+  border-top: 1px solid var(--border-subtle);
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
   .labview-split {

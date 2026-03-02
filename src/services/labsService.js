@@ -98,3 +98,6 @@ export const registerLabVms = (id, vms) =>
     method: 'POST',
     body: JSON.stringify({ vms }),
   });
+
+export const validateLab = (id) =>
+  fetchJSON(API_ENDPOINTS.LAB_VALIDATE(id), { method: 'POST' });
