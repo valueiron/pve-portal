@@ -321,6 +321,41 @@ const CodeServerPanel = ({ vm }) => {
 };
 
 // ---------------------------------------------------------------------------
+// ChromiumPanel — renders an iframe embedding the Chromium KasmVNC UI
+// ---------------------------------------------------------------------------
+const ChromiumPanel = ({ vm }) => {
+  const url = vm.proxy_path || "/chromium/";
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", backgroundColor: "#1e1e1e", overflow: "hidden" }}>
+      <div style={{
+        backgroundColor: "#1a1a1f", color: "#fff", padding: "0.4rem 0.85rem",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        fontSize: "0.8rem", borderBottom: "1px solid #2a2a35", flexShrink: 0,
+      }}>
+        <span><strong>Chromium Browser</strong></span>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            padding: "0.2rem 0.6rem", border: "1px solid #555", borderRadius: "4px",
+            backgroundColor: "#333", color: "#fff", textDecoration: "none", fontSize: "0.75rem",
+          }}
+        >
+          Open in New Tab ↗
+        </a>
+      </div>
+      <iframe
+        src={url}
+        style={{ flex: 1, border: "none", width: "100%", height: "100%" }}
+        title="Chromium Browser"
+        allow="clipboard-read; clipboard-write"
+      />
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // ActiveTerminalTab — renders the correct terminal for the selected VM tab
 // ---------------------------------------------------------------------------
 const ActiveTerminalTab = ({ vms, activeTab, onTerminalReady }) => {
@@ -329,6 +364,10 @@ const ActiveTerminalTab = ({ vms, activeTab, onTerminalReady }) => {
 
   if (vm.type === "codeserver") {
     return <CodeServerPanel key={vm.vmid} vm={vm} />;
+  }
+
+  if (vm.type === "chromium") {
+    return <ChromiumPanel key={vm.vmid} vm={vm} />;
   }
 
   if (vm.type === "docker") {
@@ -392,6 +431,7 @@ const LabView = () => {
   const [validating, setValidating] = useState(false);
   const [validationBanner, setValidationBanner] = useState(null); // { passed, output } | null
   const validationTimerRef = useRef(null);
+  const [chromiumUrl, setChromiumUrl] = useState("https://www.google.com");
 
   const handleTerminalReady = useCallback((fn) => {
     setTerminalWriteFn(() => fn ?? null);
@@ -462,7 +502,8 @@ const LabView = () => {
     setLaunchError(null);
     setLaunching(true);
     try {
-      await launchLab(decodedId);
+      const extraParams = lab?.type === "chromium" ? { chrome_url: chromiumUrl } : {};
+      await launchLab(decodedId, "deploy", extraParams);
       setRunStatus({ status: "queued", conclusion: null });
       // Start polling immediately after launch
       await pollStatus();
@@ -533,6 +574,17 @@ const LabView = () => {
             >
               {validating ? "Checking…" : "✓ Check"}
             </button>
+          )}
+          {lab?.type === "chromium" && (
+            <input
+              type="url"
+              className="labview-chromium-url-input"
+              value={chromiumUrl}
+              onChange={(e) => setChromiumUrl(e.target.value)}
+              placeholder="https://www.google.com"
+              title="URL for Chromium to open on launch"
+              disabled={launching || isRunning}
+            />
           )}
           <button
             className="labview-launch-btn"

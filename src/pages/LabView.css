@@ -85,6 +85,28 @@
   cursor: not-allowed;
 }
 
+.labview-chromium-url-input {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md, 6px);
+  background-color: var(--bg-surface-2);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  width: 22rem;
+  min-width: 10rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.labview-chromium-url-input:focus {
+  border-color: var(--accent-primary, #06b6d4);
+}
+
+.labview-chromium-url-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .labview-gh-link {
   font-size: 0.78rem;
   color: var(--accent-primary, #06b6d4);
