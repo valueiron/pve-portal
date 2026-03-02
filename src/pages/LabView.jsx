@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { Terminal } from "@xterm/xterm";
@@ -56,6 +56,53 @@ const StatusBadge = ({ statusKey }) => {
 
 
 // ---------------------------------------------------------------------------
+// CodeBlock — wraps fenced code blocks with a "▶ Run" button that injects the
+// code into whichever terminal is currently active.
+// Props:
+//   writeFn   (text: string) => void | null   — provided by the active terminal
+//   children  React node                      — the inner <code> element
+//   node      AST node from react-markdown    — not forwarded to DOM
+// ---------------------------------------------------------------------------
+const CodeBlock = ({ writeFn, children, node, ...preProps }) => {
+  const [btnState, setBtnState] = useState("idle"); // idle | sent | no-terminal
+
+  const codeEl = Array.isArray(children) ? children[0] : children;
+  const rawCode = codeEl?.props?.children ?? "";
+  const code = Array.isArray(rawCode) ? rawCode.join("") : String(rawCode);
+  const lang = codeEl?.props?.className?.replace("language-", "") || "txt";
+
+  const handleRun = () => {
+    if (!writeFn) {
+      setBtnState("no-terminal");
+      setTimeout(() => setBtnState("idle"), 1800);
+      return;
+    }
+    const text = code.endsWith("\n") ? code : code + "\n";
+    writeFn(text);
+    setBtnState("sent");
+    setTimeout(() => setBtnState("idle"), 1200);
+  };
+
+  const btnLabel = { idle: "▶ Run", sent: "✓ Sent", "no-terminal": "✗ No terminal" }[btnState];
+
+  return (
+    <div className="code-block-wrapper">
+      <div className="code-block-header">
+        <span className="code-block-lang">{lang}</span>
+        <button
+          className={`code-run-btn code-run-btn--${btnState}`}
+          onClick={handleRun}
+          title={writeFn ? "Run in active terminal" : "Switch to a terminal tab first"}
+        >
+          {btnLabel}
+        </button>
+      </div>
+      <pre {...preProps}>{children}</pre>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // ExecTerminalPanel — generic xterm.js panel that connects via a POST session
 // endpoint then a WebSocket. Used for both Docker and K8s exec.
 // Props:
@@ -63,7 +110,7 @@ const StatusBadge = ({ statusKey }) => {
 //   createSession  async () => { sessionId }   — POST to create session
 //   buildWsUrl   (sessionId) => string          — build the WS URL
 // ---------------------------------------------------------------------------
-const ExecTerminalPanel = ({ name, createSession, buildWsUrl }) => {
+const ExecTerminalPanel = ({ name, createSession, buildWsUrl, onReady }) => {
   const containerRef = useRef(null);
   const termRef = useRef(null);
   const fitAddonRef = useRef(null);
@@ -135,6 +182,10 @@ const ExecTerminalPanel = ({ name, createSession, buildWsUrl }) => {
                 setError(null);
                 term.write("\r\n\x1b[32m▶ Session established\x1b[0m\r\n\r\n");
                 ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+                onReady?.((text) => {
+                  if (ws.readyState === WebSocket.OPEN)
+                    ws.send(new TextEncoder().encode(text));
+                });
                 pingRef.current = setInterval(() => {
                   if (ws.readyState === WebSocket.OPEN)
                     ws.send(JSON.stringify({ type: "ping" }));
@@ -187,13 +238,14 @@ const ExecTerminalPanel = ({ name, createSession, buildWsUrl }) => {
 
     return () => {
       cancelled = true;
+      onReady?.(null);
       ro.disconnect();
       clearInterval(pingRef.current);
       if (wsRef.current) { try { wsRef.current.close(1000); } catch {} wsRef.current = null; }
       term.dispose();
       termRef.current = null;
     };
-    // createSession, buildWsUrl, and fontSize are excluded intentionally:
+    // createSession, buildWsUrl, fontSize, and onReady are excluded intentionally:
     // createSession/buildWsUrl are stable callbacks from parent; fontSize is
     // handled by a separate effect that updates the live terminal without reconnecting.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -270,7 +322,7 @@ const CodeServerPanel = ({ vm }) => {
 // ---------------------------------------------------------------------------
 // ActiveTerminalTab — renders the correct terminal for the selected VM tab
 // ---------------------------------------------------------------------------
-const ActiveTerminalTab = ({ vms, activeTab }) => {
+const ActiveTerminalTab = ({ vms, activeTab, onTerminalReady }) => {
   const vm = vms.find((v) => String(v.vmid) === activeTab);
   if (!vm) return null;
 
@@ -283,6 +335,7 @@ const ActiveTerminalTab = ({ vms, activeTab }) => {
       <ExecTerminalPanel
         key={vm.container_id}
         name={vm.name}
+        onReady={onTerminalReady}
         createSession={() =>
           fetch(API_ENDPOINTS.DOCKER_CONTAINER_EXEC_SESSION(vm.container_id), {
             method: "POST",
@@ -300,6 +353,7 @@ const ActiveTerminalTab = ({ vms, activeTab }) => {
       <ExecTerminalPanel
         key={`${vm.namespace}/${vm.pod}`}
         name={vm.name}
+        onReady={onTerminalReady}
         createSession={() =>
           fetch(API_ENDPOINTS.K8S_POD_EXEC_SESSION(vm.namespace, vm.pod), {
             method: "POST",
@@ -313,7 +367,7 @@ const ActiveTerminalTab = ({ vms, activeTab }) => {
   }
 
   // Default: SSH terminal for Proxmox VMs
-  return <TerminalPanel key={vm.vmid} vmid={vm.vmid} name={vm.name} />;
+  return <TerminalPanel key={vm.vmid} vmid={vm.vmid} name={vm.name} onReady={onTerminalReady} />;
 };
 
 // ---------------------------------------------------------------------------
@@ -333,6 +387,15 @@ const LabView = () => {
   const [runStatus, setRunStatus] = useState({ status: "idle", conclusion: null });
   const [vms, setVms] = useState([]);
   const [activeTab, setActiveTab] = useState("status");
+  const [terminalWriteFn, setTerminalWriteFn] = useState(null);
+
+  const handleTerminalReady = useCallback((fn) => {
+    setTerminalWriteFn(() => fn ?? null);
+  }, []);
+
+  const markdownComponents = useMemo(() => ({
+    pre: (props) => <CodeBlock writeFn={terminalWriteFn} {...props} />,
+  }), [terminalWriteFn]);
 
   const pollRef = useRef(null);
 
@@ -465,7 +528,7 @@ const LabView = () => {
         <div className="labview-instructions">
           <div className="labview-instructions-inner">
             {lab ? (
-              <ReactMarkdown>{instructions}</ReactMarkdown>
+              <ReactMarkdown components={markdownComponents}>{instructions}</ReactMarkdown>
             ) : (
               <p className="labview-loading">Loading instructions…</p>
             )}
@@ -544,7 +607,7 @@ const LabView = () => {
                 )}
               </div>
             ) : (
-              <ActiveTerminalTab vms={vms} activeTab={activeTab} />
+              <ActiveTerminalTab vms={vms} activeTab={activeTab} onTerminalReady={handleTerminalReady} />
             )}
           </div>
         </div>
