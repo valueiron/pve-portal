@@ -7,7 +7,7 @@ import { createTerminalSession } from "../services/vmService";
 import TERMINAL_THEME from "../utils/terminalTheme";
 import "@xterm/xterm/css/xterm.css";
 
-const TerminalPanel = ({ vmid, name }) => {
+const TerminalPanel = ({ vmid, name, onReady }) => {
   const containerRef = useRef(null);
   const termRef = useRef(null);
   const fitAddonRef = useRef(null);
@@ -84,6 +84,9 @@ const TerminalPanel = ({ vmid, name }) => {
                 setStatus("Connected");
                 setError(null);
                 term.write("\r\n\x1b[32m▶ Session established\x1b[0m\r\n\r\n");
+                onReady?.((text) => {
+                  if (ws.readyState === WebSocket.OPEN) ws.send(text);
+                });
                 pingRef.current = setInterval(() => {
                   if (ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: "ping" }));
@@ -148,6 +151,7 @@ const TerminalPanel = ({ vmid, name }) => {
 
     return () => {
       cancelled = true;
+      onReady?.(null);
       ro.disconnect();
       clearInterval(pingRef.current);
       if (wsRef.current) {
@@ -159,8 +163,9 @@ const TerminalPanel = ({ vmid, name }) => {
       term.dispose();
       termRef.current = null;
     };
-    // fontSize is intentionally excluded — a separate effect handles live font size
-    // updates without tearing down the WebSocket connection.
+    // fontSize and onReady are intentionally excluded — fontSize is handled by a
+    // separate effect; onReady is a stable callback and including it would cause
+    // reconnections on every LabView render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vmid]);
 
