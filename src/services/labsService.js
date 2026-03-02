@@ -79,10 +79,10 @@ export const fetchLabInstructions = async (id) => {
   return instructions;
 };
 
-export const launchLab = (id, action = 'deploy') =>
+export const launchLab = (id, action = 'deploy', params = {}) =>
   fetchJSON(API_ENDPOINTS.LAB_LAUNCH(id), {
     method: 'POST',
-    body: JSON.stringify({ action }),
+    body: JSON.stringify({ action, ...params }),
   });
 
 export const fetchLabStatus = (id) =>
