@@ -12,6 +12,7 @@ import {
   launchLab,
   fetchLabStatus,
   fetchLabVms,
+  validateLab,
 } from "../services/labsService";
 import { API_ENDPOINTS } from "../config/api";
 import TerminalPanel from "./TerminalPanel";
@@ -388,6 +389,9 @@ const LabView = () => {
   const [vms, setVms] = useState([]);
   const [activeTab, setActiveTab] = useState("status");
   const [terminalWriteFn, setTerminalWriteFn] = useState(null);
+  const [validating, setValidating] = useState(false);
+  const [validationBanner, setValidationBanner] = useState(null); // { passed, output } | null
+  const validationTimerRef = useRef(null);
 
   const handleTerminalReady = useCallback((fn) => {
     setTerminalWriteFn(() => fn ?? null);
@@ -469,6 +473,21 @@ const LabView = () => {
     }
   };
 
+  const handleValidate = async () => {
+    setValidating(true);
+    clearTimeout(validationTimerRef.current);
+    try {
+      const result = await validateLab(decodedId);
+      setValidationBanner(result);
+      validationTimerRef.current = setTimeout(() => setValidationBanner(null), 7000);
+    } catch (err) {
+      setValidationBanner({ passed: false, output: err.message });
+      validationTimerRef.current = setTimeout(() => setValidationBanner(null), 7000);
+    } finally {
+      setValidating(false);
+    }
+  };
+
   const statusKey = resolveStatusKey(runStatus.status, runStatus.conclusion);
   const isRunning = runStatus.status === "in_progress" || runStatus.status === "queued";
 
@@ -505,6 +524,16 @@ const LabView = () => {
               View on GitHub ↗
             </a>
           )}
+          {lab?.validation && (
+            <button
+              className="labview-check-btn"
+              onClick={handleValidate}
+              disabled={validating}
+              title="Run the lab validation script"
+            >
+              {validating ? "Checking…" : "✓ Check"}
+            </button>
+          )}
           <button
             className="labview-launch-btn"
             onClick={handleLaunch}
@@ -522,6 +551,28 @@ const LabView = () => {
         </div>
       )}
 
+      {/* Validation banner */}
+      {validationBanner && (
+        <div className={`labview-validation-banner labview-validation-banner--${validationBanner.passed ? "pass" : "fail"}`}>
+          <span className="labview-validation-banner-icon">
+            {validationBanner.passed ? "✓" : "✗"}
+          </span>
+          <span className="labview-validation-banner-text">
+            {validationBanner.passed ? "Validation passed" : "Validation failed"}
+            {validationBanner.output && (
+              <span className="labview-validation-banner-output"> — {validationBanner.output.split("\n")[0]}</span>
+            )}
+          </span>
+          <button
+            className="labview-validation-banner-close"
+            onClick={() => { clearTimeout(validationTimerRef.current); setValidationBanner(null); }}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Split pane */}
       <div className="labview-split">
         {/* Left: instructions */}
@@ -533,6 +584,61 @@ const LabView = () => {
               <p className="labview-loading">Loading instructions…</p>
             )}
           </div>
+
+          {/* Tips section */}
+          {lab?.tips?.length > 0 && (
+            <div className="labview-hints-section">
+              <details className="labview-hints-details">
+                <summary className="labview-hints-summary labview-hints-summary--tips">
+                  <span className="labview-hints-icon">💡</span>
+                  Tips <span className="labview-hints-count">({lab.tips.length})</span>
+                </summary>
+                <div className="labview-hints-body">
+                  {lab.tips.map((tip, i) => (
+                    <div key={i} className="labview-hint-item labview-hint-item--tip">
+                      {typeof tip === "string" ? (
+                        <ReactMarkdown components={markdownComponents}>{tip}</ReactMarkdown>
+                      ) : (
+                        <>
+                          {tip.title && <div className="labview-hint-title">{tip.title}</div>}
+                          <ReactMarkdown components={markdownComponents}>{tip.content || ""}</ReactMarkdown>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            </div>
+          )}
+
+          {/* Solutions section */}
+          {lab?.solutions?.length > 0 && (
+            <div className="labview-hints-section">
+              <details className="labview-hints-details">
+                <summary className="labview-hints-summary labview-hints-summary--solutions">
+                  <span className="labview-hints-icon">🔑</span>
+                  Solutions <span className="labview-hints-count">({lab.solutions.length})</span>
+                </summary>
+                <div className="labview-hints-body">
+                  {lab.solutions.map((sol, i) => {
+                    const isObj = typeof sol === "object" && sol !== null;
+                    const title = isObj ? sol.title : null;
+                    const content = isObj ? (sol.content || "") : String(sol);
+                    return (
+                      <details key={i} className="labview-solution-item">
+                        <summary className="labview-solution-summary">
+                          {title || `Solution ${i + 1}`}
+                        </summary>
+                        <div className="labview-solution-body">
+                          <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
+                        </div>
+                      </details>
+                    );
+                  })}
+                </div>
+              </details>
+            </div>
+          )}
         </div>
 
         {/* Right: tabbed console / VNC pane */}

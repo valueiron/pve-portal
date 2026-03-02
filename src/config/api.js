@@ -146,6 +146,7 @@ export const API_ENDPOINTS = {
   LAB_LAUNCH: (id) => `${API_BASE_URL}/api/labs/${id}/launch`,
   LAB_STATUS: (id) => `${API_BASE_URL}/api/labs/${id}/status`,
   LAB_VMS: (id) => `${API_BASE_URL}/api/labs/${id}/vms`,
+  LAB_VALIDATE: (id) => `${API_BASE_URL}/api/labs/${id}/validate`,
 };
 
 export default API_BASE_URL;
