@@ -76,3 +76,17 @@ export const fetchSystemInfo = () =>
 
 export const fetchSystemDisk = () =>
   fetchJSON(API_ENDPOINTS.DOCKER_SYSTEM_DISK);
+
+export const fetchVulnStatus = () =>
+  fetchJSON(API_ENDPOINTS.DOCKER_VULN_STATUS);
+
+export const triggerTrivyDownload = () =>
+  fetchJSON(API_ENDPOINTS.DOCKER_VULN_DOWNLOAD, { method: 'POST' });
+
+export const scanImageVulnerabilities = (imageRef) =>
+  fetch(API_ENDPOINTS.DOCKER_VULN_SCAN, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: imageRef }),
+    signal: AbortSignal.timeout(300_000),
+  }).then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(new Error(e.error || 'scan failed'))));
