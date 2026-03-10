@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
     FaPlay, FaStop, FaSyncAlt, FaSearch, FaTh, FaTable, FaDocker,
     FaFileAlt, FaDatabase, FaNetworkWired, FaServer, FaMemory,
-    FaMicrochip, FaHdd, FaCube, FaLayerGroup, FaInfoCircle, FaCode
+    FaMicrochip, FaHdd, FaCube, FaLayerGroup, FaInfoCircle, FaCode,
+    FaShieldAlt, FaDownload, FaSpinner, FaExternalLinkAlt, FaChevronDown, FaChevronRight
 } from "react-icons/fa";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -15,10 +16,11 @@ import {
     fetchContainerLogs, fetchContainerMetrics,
     inspectContainer, inspectImage, inspectVolume, inspectNetwork,
     fetchImages, fetchVolumes, fetchDockerNetworks, fetchSystemInfo, fetchSystemDisk,
-    createContainerExecSession
+    createContainerExecSession,
+    fetchVulnStatus, triggerTrivyDownload, scanImageVulnerabilities,
 } from "../services/dockerService";
 
-const TABS = ["Containers", "Images", "Volumes", "Networks", "System"];
+const TABS = ["Containers", "Images", "Volumes", "Networks", "System", "Vulnerabilities"];
 
 const formatBytes = (bytes) => {
     if (!bytes || bytes === 0) return "0 B";
@@ -1935,6 +1937,389 @@ const actionBtn = (bg, disabled) => ({
     transition: "opacity 0.2s",
 });
 
+// ── Vulnerabilities Tab ───────────────────────────────────────────────────────
+
+const SEVERITY_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"];
+const SEVERITY_COLORS = {
+    CRITICAL: "#f44336",
+    HIGH: "#ff9800",
+    MEDIUM: "#ffc107",
+    LOW: "#2196f3",
+    UNKNOWN: "#9e9e9e",
+};
+
+const parseTrivyResults = (json) => {
+    const vulns = (json.Results || []).flatMap(r => r.Vulnerabilities || []);
+    return vulns.sort((a, b) =>
+        SEVERITY_ORDER.indexOf(a.Severity) - SEVERITY_ORDER.indexOf(b.Severity)
+    );
+};
+
+const SeverityBadge = ({ severity, count }) => (
+    <span style={{
+        display: "inline-flex", alignItems: "center", gap: "0.25rem",
+        padding: "0.2rem 0.5rem", borderRadius: "4px",
+        backgroundColor: `${SEVERITY_COLORS[severity] || "#9e9e9e"}22`,
+        color: SEVERITY_COLORS[severity] || "#9e9e9e",
+        fontWeight: "700", fontSize: "0.72rem", textTransform: "uppercase",
+        border: `1px solid ${SEVERITY_COLORS[severity] || "#9e9e9e"}44`,
+    }}>
+        {severity}{count !== undefined && `:${count}`}
+    </span>
+);
+
+const VulnerabilitiesTab = () => {
+    const [trivyStatus, setTrivyStatus] = useState(null);
+    const [images, setImages] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [scanState, setScanState] = useState({});    // { [imageId]: "scanning"|"done"|"error" }
+    const [scanResults, setScanResults] = useState({}); // { [imageId]: vuln[] }
+    const [scanErrors, setScanErrors] = useState({});  // { [imageId]: string }
+    const [expanded, setExpanded] = useState(null);
+    const [severityFilter, setSeverityFilter] = useState([]);
+    const pollingRef = useRef(null);
+
+    const loadStatus = useCallback(async () => {
+        try {
+            const s = await fetchVulnStatus();
+            setTrivyStatus(s);
+            return s;
+        } catch {
+            // ignore
+        }
+    }, []);
+
+    const stopPolling = useCallback(() => {
+        if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+        }
+    }, []);
+
+    const startPolling = useCallback(() => {
+        stopPolling();
+        pollingRef.current = setInterval(async () => {
+            const s = await loadStatus();
+            if (s?.ready) stopPolling();
+        }, 3000);
+    }, [loadStatus, stopPolling]);
+
+    useEffect(() => {
+        const init = async () => {
+            setLoading(true);
+            try {
+                const [imgs, status] = await Promise.all([
+                    fetchImages(true),
+                    fetchVulnStatus(),
+                ]);
+                setImages(imgs || []);
+                setTrivyStatus(status);
+                if (status?.pulling && !status?.ready) startPolling();
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        init();
+        return () => stopPolling();
+    }, [startPolling, stopPolling]);
+
+    const handleDownload = async () => {
+        try {
+            await triggerTrivyDownload();
+            setTrivyStatus(s => ({ ...s, pulling: true, ready: false }));
+            startPolling();
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    const handleScan = async (img) => {
+        const ref = img.repo_tags?.[0] || img.id;
+        const key = img.id;
+        setScanState(s => ({ ...s, [key]: "scanning" }));
+        setScanErrors(e => { const n = { ...e }; delete n[key]; return n; });
+        try {
+            const json = await scanImageVulnerabilities(ref);
+            const vulns = parseTrivyResults(json);
+            setScanResults(r => ({ ...r, [key]: vulns }));
+            setScanState(s => ({ ...s, [key]: "done" }));
+            setExpanded(key);
+        } catch (err) {
+            setScanState(s => ({ ...s, [key]: "error" }));
+            setScanErrors(e => ({ ...e, [key]: err.message }));
+        }
+    };
+
+    const toggleExpanded = (id) => setExpanded(e => e === id ? null : id);
+
+    const toggleSeverity = (sev) => {
+        setSeverityFilter(f =>
+            f.includes(sev) ? f.filter(s => s !== sev) : [...f, sev]
+        );
+    };
+
+    const getSeverityCounts = (vulns) => {
+        const counts = {};
+        for (const v of vulns) counts[v.Severity] = (counts[v.Severity] || 0) + 1;
+        return counts;
+    };
+
+    const filteredVulns = (vulns) =>
+        severityFilter.length === 0
+            ? vulns
+            : vulns.filter(v => severityFilter.includes(v.Severity));
+
+    if (loading) return <div style={{ padding: "2rem", color: "var(--text-secondary)" }}>Loading...</div>;
+    if (error) return <div style={{ padding: "2rem", color: "#f44336" }}>Error: {error}</div>;
+
+    const statusBar = () => {
+        if (!trivyStatus) return null;
+        if (trivyStatus.ready) return (
+            <div style={{
+                display: "flex", alignItems: "center", gap: "0.6rem",
+                padding: "0.75rem 1rem", borderRadius: "8px",
+                background: "rgba(76,175,80,0.08)", border: "1px solid rgba(76,175,80,0.3)",
+                marginBottom: "1.5rem",
+            }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#4caf50", flexShrink: 0 }} />
+                <span style={{ color: "#4caf50", fontWeight: "600", fontSize: "0.875rem" }}>
+                    Trivy ready
+                </span>
+                <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
+                    ({trivyStatus.version || "aquasec/trivy:latest"})
+                </span>
+            </div>
+        );
+        if (trivyStatus.pulling) return (
+            <div style={{
+                display: "flex", alignItems: "center", gap: "0.6rem",
+                padding: "0.75rem 1rem", borderRadius: "8px",
+                background: "rgba(33,150,243,0.08)", border: "1px solid rgba(33,150,243,0.3)",
+                marginBottom: "1.5rem",
+            }}>
+                <FaSpinner style={{ color: "#2196f3", animation: "spin 1s linear infinite" }} />
+                <span style={{ color: "#2196f3", fontWeight: "600", fontSize: "0.875rem" }}>
+                    Pulling Trivy image...
+                </span>
+            </div>
+        );
+        return (
+            <div style={{
+                display: "flex", alignItems: "center", gap: "0.75rem",
+                padding: "0.75rem 1rem", borderRadius: "8px",
+                background: "rgba(255,152,0,0.08)", border: "1px solid rgba(255,152,0,0.3)",
+                marginBottom: "1.5rem",
+            }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#9e9e9e", flexShrink: 0 }} />
+                <span style={{ color: "var(--text-secondary)", fontWeight: "600", fontSize: "0.875rem" }}>
+                    Trivy image not downloaded
+                </span>
+                <button onClick={handleDownload} style={{
+                    display: "flex", alignItems: "center", gap: "0.35rem",
+                    padding: "0.35rem 0.85rem", borderRadius: "6px",
+                    background: "#2196f3", border: "none", color: "#fff",
+                    cursor: "pointer", fontWeight: "600", fontSize: "0.8rem",
+                }}>
+                    <FaDownload size={11} /> Download Trivy
+                </button>
+            </div>
+        );
+    };
+
+    const localImages = images.filter(img =>
+        !(img.repo_tags || []).some(t => t.includes("aquasec/trivy"))
+    );
+
+    return (
+        <>
+            {statusBar()}
+            <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+                    <thead>
+                        <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                            <th style={{ textAlign: "left", padding: "0.6rem 0.75rem", color: "var(--text-secondary)", fontWeight: "600", fontSize: "0.75rem", textTransform: "uppercase" }}>Image</th>
+                            <th style={{ textAlign: "right", padding: "0.6rem 0.75rem", color: "var(--text-secondary)", fontWeight: "600", fontSize: "0.75rem", textTransform: "uppercase" }}>Size</th>
+                            <th style={{ textAlign: "left", padding: "0.6rem 0.75rem", color: "var(--text-secondary)", fontWeight: "600", fontSize: "0.75rem", textTransform: "uppercase" }}>Last Scan</th>
+                            <th style={{ textAlign: "right", padding: "0.6rem 0.75rem", color: "var(--text-secondary)", fontWeight: "600", fontSize: "0.75rem", textTransform: "uppercase" }}>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {localImages.map(img => {
+                            const key = img.id;
+                            const tag = img.repo_tags?.[0] || img.id?.substring(7, 19) || "unknown";
+                            const state = scanState[key];
+                            const vulns = scanResults[key];
+                            const isExpanded = expanded === key;
+                            const counts = vulns ? getSeverityCounts(vulns) : null;
+                            const fVulns = vulns ? filteredVulns(vulns) : [];
+
+                            return (
+                                <tr key={key} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                                    <td colSpan={4} style={{ padding: 0 }}>
+                                        {/* Row */}
+                                        <div
+                                            onClick={() => vulns && toggleExpanded(key)}
+                                            style={{
+                                                display: "grid",
+                                                gridTemplateColumns: "1fr auto auto auto",
+                                                gap: "0.75rem",
+                                                alignItems: "center",
+                                                padding: "0.65rem 0.75rem",
+                                                cursor: vulns ? "pointer" : "default",
+                                            }}
+                                        >
+                                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: 0 }}>
+                                                {vulns
+                                                    ? (isExpanded ? <FaChevronDown size={11} style={{ color: "var(--text-secondary)", flexShrink: 0 }} /> : <FaChevronRight size={11} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />)
+                                                    : <span style={{ width: 11, flexShrink: 0 }} />
+                                                }
+                                                <span style={{ fontWeight: "500", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                    {tag}
+                                                </span>
+                                                {counts && (
+                                                    <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
+                                                        {SEVERITY_ORDER.filter(s => counts[s]).map(s => (
+                                                            <SeverityBadge key={s} severity={s} count={counts[s]} />
+                                                        ))}
+                                                        {vulns.length === 0 && (
+                                                            <span style={{ color: "#4caf50", fontSize: "0.75rem", fontWeight: "600" }}>No vulnerabilities</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem", textAlign: "right" }}>
+                                                {formatBytes(img.size)}
+                                            </span>
+                                            <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem", minWidth: "6rem", textAlign: "center" }}>
+                                                {state === "done" ? "Just now" : "—"}
+                                            </span>
+                                            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                                                {state === "scanning" ? (
+                                                    <span style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#2196f3", fontSize: "0.8rem" }}>
+                                                        <FaSpinner style={{ animation: "spin 1s linear infinite" }} /> Scanning...
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        disabled={!trivyStatus?.ready || state === "scanning"}
+                                                        onClick={(e) => { e.stopPropagation(); handleScan(img); }}
+                                                        style={{
+                                                            padding: "0.35rem 0.85rem", borderRadius: "6px",
+                                                            background: trivyStatus?.ready ? "#f44336" : "var(--border-subtle)",
+                                                            border: "none", color: trivyStatus?.ready ? "#fff" : "var(--text-secondary)",
+                                                            cursor: trivyStatus?.ready ? "pointer" : "not-allowed",
+                                                            fontWeight: "600", fontSize: "0.78rem",
+                                                            display: "flex", alignItems: "center", gap: "0.3rem",
+                                                            opacity: trivyStatus?.ready ? 1 : 0.6,
+                                                        }}
+                                                    >
+                                                        <FaShieldAlt size={11} /> {state === "done" ? "Re-scan" : "Scan"}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Error */}
+                                        {state === "error" && scanErrors[key] && (
+                                            <div style={{ padding: "0.5rem 0.75rem 0.5rem 2rem", color: "#f44336", fontSize: "0.8rem" }}>
+                                                Error: {scanErrors[key]}
+                                            </div>
+                                        )}
+
+                                        {/* Results */}
+                                        {isExpanded && vulns && (
+                                            <div style={{ padding: "0 0.75rem 0.75rem 2rem" }}>
+                                                {/* Severity filter */}
+                                                <div style={{ display: "flex", gap: "0.4rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setSeverityFilter([]); }}
+                                                        style={{
+                                                            padding: "0.25rem 0.65rem", borderRadius: "4px", border: "1px solid",
+                                                            borderColor: severityFilter.length === 0 ? "var(--text-primary)" : "var(--border-subtle)",
+                                                            background: severityFilter.length === 0 ? "var(--bg-surface-2)" : "transparent",
+                                                            color: "var(--text-primary)", cursor: "pointer", fontSize: "0.75rem", fontWeight: "600",
+                                                        }}
+                                                    >
+                                                        ALL
+                                                    </button>
+                                                    {SEVERITY_ORDER.filter(s => counts[s]).map(s => (
+                                                        <button
+                                                            key={s}
+                                                            onClick={(e) => { e.stopPropagation(); toggleSeverity(s); }}
+                                                            style={{
+                                                                padding: "0.25rem 0.65rem", borderRadius: "4px", border: "1px solid",
+                                                                borderColor: severityFilter.includes(s) ? SEVERITY_COLORS[s] : "var(--border-subtle)",
+                                                                background: severityFilter.includes(s) ? `${SEVERITY_COLORS[s]}22` : "transparent",
+                                                                color: severityFilter.includes(s) ? SEVERITY_COLORS[s] : "var(--text-secondary)",
+                                                                cursor: "pointer", fontSize: "0.75rem", fontWeight: "600",
+                                                            }}
+                                                        >
+                                                            {s}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                {fVulns.length === 0 ? (
+                                                    <div style={{ color: "#4caf50", fontSize: "0.85rem", padding: "0.5rem 0" }}>
+                                                        No vulnerabilities found.
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ overflowX: "auto" }}>
+                                                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem" }}>
+                                                            <thead>
+                                                                <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                                                                    {["Severity", "CVE ID", "Package", "Installed", "Fixed", "Title"].map(h => (
+                                                                        <th key={h} style={{ textAlign: "left", padding: "0.4rem 0.5rem", color: "var(--text-secondary)", fontWeight: "600", fontSize: "0.72rem", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                                                                    ))}
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {fVulns.map((v, i) => (
+                                                                    <tr key={`${v.VulnerabilityID}-${i}`} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                                                                        <td style={{ padding: "0.4rem 0.5rem" }}>
+                                                                            <SeverityBadge severity={v.Severity} />
+                                                                        </td>
+                                                                        <td style={{ padding: "0.4rem 0.5rem", whiteSpace: "nowrap" }}>
+                                                                            {v.PrimaryURL ? (
+                                                                                <a href={v.PrimaryURL} target="_blank" rel="noreferrer"
+                                                                                    style={{ color: "#2196f3", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}
+                                                                                    onClick={e => e.stopPropagation()}>
+                                                                                    {v.VulnerabilityID} <FaExternalLinkAlt size={9} />
+                                                                                </a>
+                                                                            ) : v.VulnerabilityID}
+                                                                        </td>
+                                                                        <td style={{ padding: "0.4rem 0.5rem" }}>{v.PkgName}</td>
+                                                                        <td style={{ padding: "0.4rem 0.5rem", fontFamily: "monospace" }}>{v.InstalledVersion}</td>
+                                                                        <td style={{ padding: "0.4rem 0.5rem", fontFamily: "monospace", color: v.FixedVersion ? "#4caf50" : "var(--text-secondary)" }}>{v.FixedVersion || "—"}</td>
+                                                                        <td style={{ padding: "0.4rem 0.5rem", maxWidth: "300px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-secondary)" }}>{v.Title || "—"}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                        {localImages.length === 0 && (
+                            <tr>
+                                <td colSpan={4} style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>
+                                    No local images found.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </>
+    );
+};
+
 // ── Main Docker Page ──────────────────────────────────────────────────────────
 
 const Docker = () => {
@@ -1946,6 +2331,7 @@ const Docker = () => {
         Volumes: <FaDatabase style={{ color: "#ff9800" }} />,
         Networks: <FaNetworkWired style={{ color: "#9c27b0" }} />,
         System: <FaServer style={{ color: "#4caf50" }} />,
+        Vulnerabilities: <FaShieldAlt style={{ color: "#f44336" }} />,
     };
 
     return (
@@ -1989,6 +2375,7 @@ const Docker = () => {
                 {activeTab === "Volumes" && <VolumesTab />}
                 {activeTab === "Networks" && <NetworksTab />}
                 {activeTab === "System" && <SystemTab />}
+                {activeTab === "Vulnerabilities" && <VulnerabilitiesTab />}
             </div>
         </div>
     );
