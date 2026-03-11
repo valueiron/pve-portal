@@ -139,6 +139,12 @@ export const API_ENDPOINTS = {
   DNS_BLOCKLIST: (id) => `${API_BASE_URL}/api/dns/blocklists/${id}`,
   DNS_AUDIT: `${API_BASE_URL}/api/dns/audit`,
 
+  // Routes / Load Balancer endpoints
+  ROUTES_STATUS: `${API_BASE_URL}/api/routes/status`,
+  ROUTES:        `${API_BASE_URL}/api/routes`,
+  ROUTE:      (id) => `${API_BASE_URL}/api/routes/${id}`,
+  AUTH_ME:       `${API_BASE_URL}/api/auth/me`,
+
   // Labs endpoints
   LABS_REPOS: `${API_BASE_URL}/api/labs/repos`,
   LABS_REPO: (id) => `${API_BASE_URL}/api/labs/repos/${id}`,

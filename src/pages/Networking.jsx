@@ -3,6 +3,7 @@ import { FaSearch, FaSyncAlt, FaTh, FaTable } from "react-icons/fa";
 import "./Page.css";
 import { fetchNetworking } from "../services/networkingService";
 import DnsTab from "./DnsTab";
+import LbTab from "./LbTab";
 import azureIcon from "../assets/Azure.png";
 import awsIcon from "../assets/AWS.png";
 
@@ -516,9 +517,13 @@ const Networking = () => {
                 <button style={tabStyle("dns")} onClick={() => setActiveTab("dns")}>
                     DNS
                 </button>
+                <button style={tabStyle("loadbalancer")} onClick={() => setActiveTab("loadbalancer")}>
+                    Load Balancer
+                </button>
             </div>
 
             {activeTab === "dns" && <DnsTab />}
+            {activeTab === "loadbalancer" && <LbTab />}
 
             {activeTab === "infrastructure" && <>
 

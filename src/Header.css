@@ -203,6 +203,18 @@
   }
 }
 
+.header-dropdown-username {
+  padding: 10px 16px 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
 .header-dropdown-item {
   width: 100%;
   padding: 10px 16px;
@@ -220,6 +232,11 @@
 .header-dropdown-item:hover {
   background-color: var(--accent-muted);
   color: var(--accent);
+}
+
+.header-dropdown-logout:hover {
+  background-color: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
 }
 
 /* Responsive adjustments */

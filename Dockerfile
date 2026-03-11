@@ -37,12 +37,7 @@ RUN echo '#!/bin/sh' > /entrypoint.sh && \
     echo '    -out /etc/nginx/ssl/cert.pem \' >> /entrypoint.sh && \
     echo '    -subj "/CN=localhost" 2>/dev/null' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
-    echo 'if [ -n "$API_BASE_URL" ]; then' >> /entrypoint.sh && \
-    echo '  envsubst '"'"'$API_BASE_URL'"'"' < /usr/share/nginx/html/config.js.template > /usr/share/nginx/html/config.js' >> /entrypoint.sh && \
-    echo 'else' >> /entrypoint.sh && \
-    echo '  # No API_BASE_URL set, use auto-detection - create empty config.js' >> /entrypoint.sh && \
-    echo '  echo "// Auto-detection enabled - API URL will be determined from current page URL" > /usr/share/nginx/html/config.js' >> /entrypoint.sh && \
-    echo 'fi' >> /entrypoint.sh && \
+    echo 'envsubst '"'"'$API_BASE_URL $OIDC_ISSUER_URL'"'"' < /usr/share/nginx/html/config.js.template > /usr/share/nginx/html/config.js' >> /entrypoint.sh && \
     echo 'rm -f /usr/share/nginx/html/config.js.template' >> /entrypoint.sh && \
     echo 'exec nginx -g "daemon off;"' >> /entrypoint.sh && \
     chmod +x /entrypoint.sh
