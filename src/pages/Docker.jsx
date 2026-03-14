@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, createContext, useContext } from "react";
 import {
     FaPlay, FaStop, FaSyncAlt, FaSearch, FaTh, FaTable, FaDocker,
     FaFileAlt, FaDatabase, FaNetworkWired, FaServer, FaMemory,
@@ -12,13 +12,13 @@ import "@xterm/xterm/css/xterm.css";
 import "./Page.css";
 import { API_ENDPOINTS } from "../config/api";
 import {
-    fetchContainers, startContainer, stopContainer, restartContainer,
-    fetchContainerLogs, fetchContainerMetrics,
-    inspectContainer, inspectImage, inspectVolume, inspectNetwork,
-    fetchImages, fetchVolumes, fetchDockerNetworks, fetchSystemInfo, fetchSystemDisk,
-    createContainerExecSession,
-    fetchVulnStatus, triggerTrivyDownload, scanImageVulnerabilities,
+    createDockerService,
+    fetchHosts, createAgent, deleteAgent,
 } from "../services/dockerService";
+
+// Context that provides host-scoped Docker service functions to all sub-components.
+const DockerSvcCtx = createContext(null);
+const useDockerSvc = () => useContext(DockerSvcCtx);
 
 const TABS = ["Containers", "Images", "Volumes", "Networks", "System", "Vulnerabilities"];
 
@@ -82,6 +82,7 @@ const MetricStat = ({ label, value, icon }) => (
 );
 
 const MetricsModal = ({ container, onClose }) => {
+    const { fetchContainerMetrics } = useDockerSvc();
     const [metrics, setMetrics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -714,6 +715,7 @@ const DOCKER_EXEC_THEME = {
 
 // Inner terminal component — connects to a container exec session via WebSocket.
 const ContainerTerminalInner = ({ containerId, shell = "auto" }) => {
+    const { createContainerExecSession, execWsUrl } = useDockerSvc();
     const containerRef = useRef(null);
     const termRef = useRef(null);
     const fitAddonRef = useRef(null);
@@ -768,7 +770,7 @@ const ContainerTerminalInner = ({ containerId, shell = "auto" }) => {
                 const { sessionId } = await createContainerExecSession(containerId, shell);
                 if (cancelled) return;
 
-                const ws = new WebSocket(API_ENDPOINTS.DOCKER_CONTAINER_EXEC_WEBSOCKET(sessionId));
+                const ws = new WebSocket(execWsUrl(sessionId));
                 ws.binaryType = "arraybuffer";
                 wsRef.current = ws;
 
@@ -948,6 +950,8 @@ const ContainerTerminalModal = ({ container, onClose }) => {
 // ── Containers Tab ────────────────────────────────────────────────────────────
 
 const ContainersTab = () => {
+    const { fetchContainers, startContainer, stopContainer, restartContainer,
+            inspectContainer, fetchContainerLogs, supportsExec } = useDockerSvc();
     const [containers, setContainers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -1188,7 +1192,7 @@ const ContainersTab = () => {
                                     style={actionBtn("#607d8b", inspectLoading[c.id])}>
                                     <FaInfoCircle size={14} />
                                 </button>
-                                {c.state === "running" && (
+                                {c.state === "running" && supportsExec && (
                                     <button onClick={() => setExecModal(c)} title="Exec Shell"
                                         style={actionBtn("#9c27b0", false)}>
                                         <FaCode size={14} />
@@ -1267,7 +1271,7 @@ const ContainersTab = () => {
                                                 style={actionBtn("#607d8b", inspectLoading[c.id])}>
                                                 <FaInfoCircle size={12} />
                                             </button>
-                                            {c.state === "running" && (
+                                            {c.state === "running" && supportsExec && (
                                                 <button onClick={() => setExecModal(c)} title="Exec Shell"
                                                     style={actionBtn("#9c27b0", false)}>
                                                     <FaCode size={12} />
@@ -1288,6 +1292,7 @@ const ContainersTab = () => {
 // ── Images Tab ────────────────────────────────────────────────────────────────
 
 const ImagesTab = () => {
+    const { fetchImages, inspectImage } = useDockerSvc();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -1431,6 +1436,7 @@ const ImagesTab = () => {
 // ── Volumes Tab ───────────────────────────────────────────────────────────────
 
 const VolumesTab = () => {
+    const { fetchVolumes, inspectVolume } = useDockerSvc();
     const [volumes, setVolumes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -1545,6 +1551,7 @@ const VolumesTab = () => {
 // ── Networks Tab ──────────────────────────────────────────────────────────────
 
 const NetworksTab = () => {
+    const { fetchDockerNetworks, inspectNetwork } = useDockerSvc();
     const [networks, setNetworks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -1721,6 +1728,7 @@ const DiskBar = ({ used, total, label }) => {
 };
 
 const SystemTab = () => {
+    const { fetchSystemInfo, fetchSystemDisk } = useDockerSvc();
     const [info, setInfo] = useState(null);
     const [disk, setDisk] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -1969,6 +1977,7 @@ const SeverityBadge = ({ severity, count }) => (
 );
 
 const VulnerabilitiesTab = () => {
+    const { fetchVulnStatus, triggerTrivyDownload, scanImageVulnerabilities, fetchImages } = useDockerSvc();
     const [trivyStatus, setTrivyStatus] = useState(null);
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -2320,10 +2329,240 @@ const VulnerabilitiesTab = () => {
     );
 };
 
+// ── Hosts View ────────────────────────────────────────────────────────────────
+
+const statusDot = (status) => ({
+    display: "inline-block",
+    width: "8px",
+    height: "8px",
+    borderRadius: "50%",
+    backgroundColor: status === "connected" ? "#4caf50" : "#9e9e9e",
+    flexShrink: 0,
+});
+
+const HostsView = ({ onSelect }) => {
+    const [hosts, setHosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [addModal, setAddModal] = useState(false);
+    const [addName, setAddName] = useState("");
+    const [addLoading, setAddLoading] = useState(false);
+    const [addResult, setAddResult] = useState(null); // { id, name, token, dockerRunCmd }
+
+    const load = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await fetchHosts();
+            setHosts(Array.isArray(data) ? data : []);
+        } catch (err) {
+            setError(err.message || "Failed to load hosts");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { load(); }, []);
+
+    const handleAdd = async () => {
+        if (!addName.trim()) return;
+        setAddLoading(true);
+        try {
+            const result = await createAgent(addName.trim());
+            setAddResult(result);
+            setAddName("");
+            load();
+        } catch (err) {
+            alert(`Failed to add agent: ${err.message}`);
+        } finally {
+            setAddLoading(false);
+        }
+    };
+
+    const handleDelete = async (id, name) => {
+        if (!confirm(`Remove agent "${name}"?`)) return;
+        try {
+            await deleteAgent(id);
+            load();
+        } catch (err) {
+            alert(`Failed to remove agent: ${err.message}`);
+        }
+    };
+
+    return (
+        <div className="page-container">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+                <div>
+                    <h1 className="page-title" style={{ marginBottom: "0.25rem" }}>Docker</h1>
+                    <p className="page-description" style={{ margin: 0 }}>Select a host to manage, or add a new edge agent.</p>
+                </div>
+                <button
+                    onClick={() => { setAddModal(true); setAddResult(null); }}
+                    style={{
+                        padding: "0.6rem 1.2rem", borderRadius: "8px",
+                        border: "1px solid #4caf50", background: "rgba(76,175,80,0.1)",
+                        color: "#4caf50", cursor: "pointer", fontWeight: "600",
+                        fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.4rem",
+                    }}
+                >
+                    + Add Agent
+                </button>
+            </div>
+
+            {loading && <p style={{ color: "var(--text-secondary)" }}>Loading hosts…</p>}
+            {error && <p style={{ color: "#f44336" }}>{error}</p>}
+
+            {!loading && !error && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
+                    {hosts.map(host => (
+                        <div
+                            key={host.id}
+                            onClick={() => onSelect(host)}
+                            style={{
+                                background: "var(--bg-surface-1)",
+                                border: "1px solid var(--border-default)",
+                                borderRadius: "12px",
+                                padding: "1.25rem",
+                                cursor: "pointer",
+                                transition: "border-color 0.15s, box-shadow 0.15s",
+                                position: "relative",
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = "#4caf50"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(76,175,80,0.15)"; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border-default)"; e.currentTarget.style.boxShadow = "none"; }}
+                        >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+                                    <FaDocker style={{ color: "#2496ed", fontSize: "1.75rem", flexShrink: 0 }} />
+                                    <div style={{ minWidth: 0 }}>
+                                        <div style={{ fontWeight: "700", fontSize: "1rem", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                            {host.name}
+                                        </div>
+                                        <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "0.35rem", marginTop: "0.2rem" }}>
+                                            <span style={statusDot(host.status)} />
+                                            {host.status}
+                                            {host.type === "agent" && <span style={{ marginLeft: "0.3rem", padding: "0.1rem 0.4rem", borderRadius: "4px", background: "rgba(36,150,237,0.15)", color: "#2496ed", fontWeight: "600", fontSize: "0.68rem" }}>AGENT</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                                {host.type === "agent" && (
+                                    <button
+                                        onClick={e => { e.stopPropagation(); handleDelete(host.id, host.name); }}
+                                        title="Remove agent"
+                                        style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", padding: "0.2rem", fontSize: "0.85rem", lineHeight: 1, flexShrink: 0 }}
+                                    >✕</button>
+                                )}
+                            </div>
+                            {host.hostname && (
+                                <div style={{ marginTop: "0.75rem", fontSize: "0.78rem", color: "var(--text-secondary)", fontFamily: "monospace" }}>
+                                    {host.hostname}
+                                </div>
+                            )}
+                            {host.dockerVersion && (
+                                <div style={{ marginTop: "0.25rem", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                                    Docker {host.dockerVersion}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Add Agent Modal */}
+            {addModal && (
+                <div
+                    onClick={() => { if (!addResult) setAddModal(false); }}
+                    style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{ background: "var(--bg-surface-1)", border: "1px solid var(--border-default)", borderRadius: "12px", width: "100%", maxWidth: "600px", padding: "1.5rem", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}
+                    >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+                            <h3 style={{ margin: 0, fontWeight: "700", color: "var(--text-primary)" }}>Add Edge Agent</h3>
+                            <button onClick={() => setAddModal(false)} style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "1.2rem" }}>✕</button>
+                        </div>
+
+                        {!addResult ? (
+                            <>
+                                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>
+                                    Give this agent a name, then run the generated Docker command on the remote host. The agent connects outbound — no inbound ports needed.
+                                </p>
+                                <div style={{ display: "flex", gap: "0.75rem" }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Agent name (e.g. prod-server-01)"
+                                        value={addName}
+                                        onChange={e => setAddName(e.target.value)}
+                                        onKeyDown={e => e.key === "Enter" && handleAdd()}
+                                        style={{
+                                            flex: 1, padding: "0.6rem 0.9rem",
+                                            border: "1px solid var(--border-default)",
+                                            borderRadius: "8px", background: "var(--bg-surface-2)",
+                                            color: "var(--text-primary)", fontSize: "0.9rem",
+                                        }}
+                                    />
+                                    <button
+                                        onClick={handleAdd}
+                                        disabled={addLoading || !addName.trim()}
+                                        style={{
+                                            padding: "0.6rem 1.2rem", borderRadius: "8px",
+                                            border: "none", background: addLoading || !addName.trim() ? "var(--border-subtle)" : "#4caf50",
+                                            color: "#fff", cursor: addLoading || !addName.trim() ? "not-allowed" : "pointer",
+                                            fontWeight: "600", fontSize: "0.9rem",
+                                        }}
+                                    >
+                                        {addLoading ? "Creating…" : "Create"}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div style={{ padding: "0.75rem 1rem", background: "rgba(76,175,80,0.1)", border: "1px solid #4caf50", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.85rem", color: "#4caf50" }}>
+                                    Agent <strong>{addResult.name}</strong> created. Run the command below on the remote host. The token is shown only once.
+                                </div>
+                                <p style={{ fontSize: "0.8rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.4rem" }}>DOCKER RUN COMMAND</p>
+                                <pre style={{
+                                    background: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)",
+                                    borderRadius: "8px", padding: "1rem", overflowX: "auto",
+                                    fontSize: "0.78rem", color: "var(--text-primary)",
+                                    whiteSpace: "pre-wrap", wordBreak: "break-all",
+                                    margin: 0,
+                                }}>
+                                    {addResult.dockerRunCmd}
+                                </pre>
+                                <button
+                                    onClick={() => navigator.clipboard?.writeText(addResult.dockerRunCmd)}
+                                    style={{ marginTop: "0.75rem", padding: "0.4rem 0.9rem", borderRadius: "6px", border: "1px solid var(--border-default)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontSize: "0.8rem" }}
+                                >
+                                    Copy to clipboard
+                                </button>
+                                <div style={{ marginTop: "1rem", textAlign: "right" }}>
+                                    <button
+                                        onClick={() => setAddModal(false)}
+                                        style={{ padding: "0.6rem 1.2rem", borderRadius: "8px", border: "none", background: "#4caf50", color: "#fff", cursor: "pointer", fontWeight: "600" }}
+                                    >
+                                        Done
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 // ── Main Docker Page ──────────────────────────────────────────────────────────
 
 const Docker = () => {
+    const [selectedHost, setSelectedHost] = useState(null);
     const [activeTab, setActiveTab] = useState("Containers");
+
+    const svc = useMemo(
+        () => createDockerService(selectedHost?.id || "local"),
+        [selectedHost]
+    );
 
     const tabIcons = {
         Containers: <FaDocker style={{ color: "#2496ed" }} />,
@@ -2334,50 +2573,75 @@ const Docker = () => {
         Vulnerabilities: <FaShieldAlt style={{ color: "#f44336" }} />,
     };
 
-    return (
-        <div className="page-container">
-            <h1 className="page-title">Docker</h1>
-            <p className="page-description">
-                Manage Docker containers, images, volumes, and networks.
-            </p>
+    if (!selectedHost) {
+        return <HostsView onSelect={host => { setSelectedHost(host); setActiveTab("Containers"); }} />;
+    }
 
-            {/* Tabs */}
-            <div style={{ display: "flex", gap: "0.25rem", marginBottom: "1.5rem", borderBottom: "1px solid var(--border-subtle)" }}>
-                {TABS.map(tab => (
+    return (
+        <DockerSvcCtx.Provider value={svc}>
+            <div className="page-container">
+                {/* Header with back button + host name */}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
                     <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
+                        onClick={() => setSelectedHost(null)}
                         style={{
-                            padding: "0.6rem 1.25rem",
-                            border: "none",
-                            borderBottom: activeTab === tab ? "2px solid #4caf50" : "2px solid transparent",
-                            background: "none",
-                            color: activeTab === tab ? "var(--text-primary)" : "var(--text-secondary)",
-                            cursor: "pointer",
-                            fontWeight: activeTab === tab ? "600" : "400",
-                            fontSize: "0.95rem",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.4rem",
-                            transition: "color 0.15s, border-color 0.15s",
-                            marginBottom: "-1px",
+                            background: "none", border: "1px solid var(--border-default)",
+                            borderRadius: "6px", padding: "0.3rem 0.7rem",
+                            color: "var(--text-secondary)", cursor: "pointer", fontSize: "0.82rem",
+                            display: "flex", alignItems: "center", gap: "0.35rem",
                         }}
                     >
-                        {tabIcons[tab]}
-                        {tab}
+                        ← Hosts
                     </button>
-                ))}
-            </div>
+                    <FaDocker style={{ color: "#2496ed" }} />
+                    <h1 className="page-title" style={{ margin: 0 }}>{selectedHost.name}</h1>
+                    <span style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+                        <span style={statusDot(selectedHost.status)} />
+                        {selectedHost.status}
+                    </span>
+                </div>
+                <p className="page-description">
+                    Manage Docker containers, images, volumes, and networks.
+                </p>
 
-            <div className="page-content">
-                {activeTab === "Containers" && <ContainersTab />}
-                {activeTab === "Images" && <ImagesTab />}
-                {activeTab === "Volumes" && <VolumesTab />}
-                {activeTab === "Networks" && <NetworksTab />}
-                {activeTab === "System" && <SystemTab />}
-                {activeTab === "Vulnerabilities" && <VulnerabilitiesTab />}
+                {/* Tabs */}
+                <div style={{ display: "flex", gap: "0.25rem", marginBottom: "1.5rem", borderBottom: "1px solid var(--border-subtle)" }}>
+                    {TABS.map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            style={{
+                                padding: "0.6rem 1.25rem",
+                                border: "none",
+                                borderBottom: activeTab === tab ? "2px solid #4caf50" : "2px solid transparent",
+                                background: "none",
+                                color: activeTab === tab ? "var(--text-primary)" : "var(--text-secondary)",
+                                cursor: "pointer",
+                                fontWeight: activeTab === tab ? "600" : "400",
+                                fontSize: "0.95rem",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.4rem",
+                                transition: "color 0.15s, border-color 0.15s",
+                                marginBottom: "-1px",
+                            }}
+                        >
+                            {tabIcons[tab]}
+                            {tab}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="page-content">
+                    {activeTab === "Containers" && <ContainersTab />}
+                    {activeTab === "Images" && <ImagesTab />}
+                    {activeTab === "Volumes" && <VolumesTab />}
+                    {activeTab === "Networks" && <NetworksTab />}
+                    {activeTab === "System" && <SystemTab />}
+                    {activeTab === "Vulnerabilities" && <VulnerabilitiesTab />}
+                </div>
             </div>
-        </div>
+        </DockerSvcCtx.Provider>
     );
 };
 
