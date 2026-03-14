@@ -1,14 +1,32 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaUserCircle, FaSun, FaMoon } from "react-icons/fa";
+import { API_ENDPOINTS } from "./config/api";
 import "./Header.css";
 
 const Header = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [username, setUsername] = useState(null);
     const [theme, setTheme] = useState(() => {
         return localStorage.getItem('pve-theme') || 'dark';
     });
     const dropdownRef = useRef(null);
+
+    // Build Keycloak end-session URL from injected runtime config.
+    // /oauth2/sign_out clears the proxy cookie; rd= terminates the Keycloak SSO session.
+    const oidcIssuerUrl = window.__OIDC_ISSUER_URL__;
+    const logoutUrl = oidcIssuerUrl
+        ? `/oauth2/sign_out?rd=${encodeURIComponent(`${oidcIssuerUrl}/protocol/openid-connect/logout`)}`
+        : '/oauth2/sign_out';
+
+    useEffect(() => {
+        fetch(API_ENDPOINTS.AUTH_ME, { credentials: 'include' })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data) setUsername(data.username || data.email || null);
+            })
+            .catch(() => {});
+    }, []);
 
     // Apply theme attribute to <html> and persist to localStorage
     useEffect(() => {
@@ -92,11 +110,15 @@ const Header = () => {
 
                         {isDropdownOpen && (
                             <div className="header-dropdown">
+                                {username && (
+                                    <div className="header-dropdown-username">
+                                        {username}
+                                    </div>
+                                )}
                                 <button
-                                    className="header-dropdown-item"
+                                    className="header-dropdown-item header-dropdown-logout"
                                     onClick={() => {
-                                        // Logout functionality will be implemented later
-                                        setIsDropdownOpen(false);
+                                        window.location.href = logoutUrl;
                                     }}
                                 >
                                     Logout
