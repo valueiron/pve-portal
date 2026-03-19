@@ -11,16 +11,19 @@ import { AI_TOOLS, executeTool } from '../services/aiTools';
 import './AI.css';
 
 const MODELS = [
-  'anthropic/claude-3.5-sonnet',
-  'anthropic/claude-3-haiku',
-  'openai/gpt-4o',
-  'openai/gpt-4o-mini',
-  'meta-llama/llama-3.3-70b-instruct',
-  'deepseek/deepseek-chat',
-  'openai/gpt-oss-120b:free',
-  'nvidia/nemotron-3-super-120b-a12b:free',
   'stepfun/step-3.5-flash:free',
-  'minimax/minimax-m2.5:free',
+  'google/gemini-2.5-flash',
+  'google/gemini-2.5-flash-lite',
+  'google/gemini-3-flash-preview-20251217',
+  'openai/gpt-5-mini-2025-08-07',
+  'openai/gpt-5-nano-2025-08-07',
+  'openai/gpt-oss-20b',
+  'openai/gpt-oss-120b',
+  'deepseek/deepseek-v3.2-20251201',
+  'minimax/minimax-m2.5',
+  'xiaomi/mimo-v2-flash-20251210',
+  'openrouter/hunter-alpha',
+  'openrouter/healer-alpha',
 ];
 
 const SUGGESTED_PROMPTS = [
@@ -247,7 +250,7 @@ export default function AI() {
   const [isLoading, setIsLoading] = useState(false);
   const [settings, setSettings] = useState({
     apiKey: localStorage.getItem('ai-openrouter-key') || '',
-    model: localStorage.getItem('ai-model') || 'anthropic/claude-3.5-sonnet',
+    model: localStorage.getItem('ai-model') || 'stepfun/step-3.5-flash:free',
     systemPrompt: localStorage.getItem('ai-system-prompt') || DEFAULT_SYSTEM_PROMPT,
   });
   const [showSettings, setShowSettings] = useState(false);

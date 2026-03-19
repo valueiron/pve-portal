@@ -11,18 +11,8 @@ export const DEFAULT_SYSTEM_PROMPT =
   'Always confirm destructive actions before executing them. ' +
   'Present data in clean tables or lists when appropriate.';
 
-// Models known to not support tool/function calling
-const NO_TOOLS_MODELS = new Set([
-  'openai/gpt-oss-120b:free',
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  'stepfun/step-3.5-flash:free',
-  'minimax/minimax-m2.5:free',
-  'meta-llama/llama-3.3-70b-instruct',
-  'deepseek/deepseek-chat',
-]);
-
-export function modelSupportsTools(model) {
-  return !NO_TOOLS_MODELS.has(model);
+export function modelSupportsTools() {
+  return true;
 }
 
 /**
