@@ -49,6 +49,13 @@
   overflow: hidden;
 }
 
+/* Chat layout — keeps nav, removes padding, locks overflow for internal scroll */
+.app-main--chat {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Mobile: full width when nav is hidden */
 @media (max-width: 768px) {
   .app-main {
