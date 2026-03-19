@@ -12,6 +12,7 @@ import Labs from './pages/Labs'
 import LabView from './pages/LabView'
 import VncConsole from './pages/VncConsole'
 import VyOS from './pages/VyOS'
+import AI from './pages/AI'
 
 function App() {
   const location = useLocation();
@@ -55,6 +56,7 @@ function App() {
             <Route path="/docker" element={<Docker />} />
             <Route path="/labs" element={<Labs />} />
             <Route path="/vyos" element={<VyOS />} />
+            <Route path="/ai" element={<AI />} />
           </Routes>
         </div>
       </main>
