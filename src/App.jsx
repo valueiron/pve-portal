@@ -40,6 +40,21 @@ function App() {
     );
   }
 
+  // AI page: header + nav stay, but content fills without padding and uses internal scroll
+  if (location.pathname === '/ai') {
+    return (
+      <div className="app-container">
+        <Header />
+        <Nav />
+        <main className="app-main app-main--chat">
+          <Routes>
+            <Route path="/ai" element={<AI />} />
+          </Routes>
+        </main>
+      </div>
+    );
+  }
+
   // Regular pages with Header/Nav
   return (
     <div className="app-container">
@@ -56,7 +71,6 @@ function App() {
             <Route path="/docker" element={<Docker />} />
             <Route path="/labs" element={<Labs />} />
             <Route path="/vyos" element={<VyOS />} />
-            <Route path="/ai" element={<AI />} />
           </Routes>
         </div>
       </main>
