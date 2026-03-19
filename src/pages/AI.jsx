@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { FaRobot, FaCog, FaPaperPlane, FaEye, FaEyeSlash, FaChevronDown, FaChevronRight, FaWrench, FaTimes } from 'react-icons/fa';
+import remarkGfm from 'remark-gfm';
+import {
+  FaRobot, FaCog, FaPaperPlane, FaEye, FaEyeSlash,
+  FaChevronDown, FaChevronRight, FaWrench, FaTimes,
+  FaPlus, FaCopy, FaCheck, FaTerminal,
+} from 'react-icons/fa';
 import { streamChat, DEFAULT_SYSTEM_PROMPT } from '../services/aiService';
 import { AI_TOOLS, executeTool } from '../services/aiTools';
 import './AI.css';
@@ -18,8 +23,40 @@ const MODELS = [
   'minimax/minimax-m2.5:free',
 ];
 
+const SUGGESTED_PROMPTS = [
+  { icon: '⚡', text: 'List all running virtual machines' },
+  { icon: '🐳', text: 'Show me all Docker containers and their status' },
+  { icon: '☸️', text: 'How many Kubernetes pods are running?' },
+  { icon: '🌐', text: 'Show my VyOS network devices and interfaces' },
+  { icon: '💾', text: 'What storage resources are available?' },
+  { icon: '🧪', text: 'List all available labs' },
+];
+
 // ---------------------------------------------------------------------------
-// Sub-components
+// CopyButton
+// ---------------------------------------------------------------------------
+
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (e) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <button className={`ai-copy-btn ${copied ? 'ai-copy-btn--copied' : ''}`} onClick={handleCopy} title="Copy">
+      {copied ? <FaCheck /> : <FaCopy />}
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ToolCallBlock
 // ---------------------------------------------------------------------------
 
 function ToolCallBlock({ toolCall }) {
@@ -32,26 +69,32 @@ function ToolCallBlock({ toolCall }) {
     args = toolCall.function.arguments;
   }
 
+  const hasResult = toolCall.result !== undefined;
+
   return (
-    <div className="ai-tool-block">
+    <div className={`ai-tool-block ${hasResult ? 'ai-tool-block--done' : 'ai-tool-block--running'}`}>
       <button className="ai-tool-header" onClick={() => setExpanded(v => !v)}>
-        <FaWrench className="ai-tool-icon" />
-        <span className="ai-tool-name">{toolCall.function.name}</span>
+        <span className="ai-tool-status-dot" />
+        <FaTerminal className="ai-tool-icon" />
+        <span className="ai-tool-name">{toolCall.function.name.replace(/_/g, ' ')}</span>
+        <span className="ai-tool-fn-raw">{toolCall.function.name}</span>
         {expanded ? <FaChevronDown className="ai-tool-chevron" /> : <FaChevronRight className="ai-tool-chevron" />}
       </button>
       {expanded && (
         <div className="ai-tool-body">
-          <div className="ai-tool-section-label">Arguments</div>
-          <pre className="ai-tool-pre">{JSON.stringify(args, null, 2)}</pre>
-          {toolCall.result !== undefined && (
-            <>
-              <div className="ai-tool-section-label">Result</div>
+          <div className="ai-tool-section">
+            <div className="ai-tool-section-label">Arguments</div>
+            <pre className="ai-tool-pre">{JSON.stringify(args, null, 2)}</pre>
+          </div>
+          {hasResult && (
+            <div className="ai-tool-section">
+              <div className="ai-tool-section-label ai-tool-section-label--result">Result</div>
               <pre className="ai-tool-pre ai-tool-result">
                 {typeof toolCall.result === 'string'
                   ? toolCall.result
                   : JSON.stringify(toolCall.result, null, 2)}
               </pre>
-            </>
+            </div>
           )}
         </div>
       )}
@@ -59,14 +102,18 @@ function ToolCallBlock({ toolCall }) {
   );
 }
 
-function Message({ msg }) {
+// ---------------------------------------------------------------------------
+// Message
+// ---------------------------------------------------------------------------
+
+function Message({ msg, isLatest }) {
   const isUser = msg.role === 'user';
   const isAssistant = msg.role === 'assistant';
 
   if (!isUser && !isAssistant) return null;
 
   return (
-    <div className={`ai-message ai-message--${isUser ? 'user' : 'assistant'}`}>
+    <div className={`ai-message ai-message--${isUser ? 'user' : 'assistant'} ${isLatest ? 'ai-message--latest' : ''}`}>
       {!isUser && (
         <div className="ai-message-avatar">
           <FaRobot />
@@ -81,21 +128,33 @@ function Message({ msg }) {
           </div>
         )}
         {msg.content && (
-          isUser
-            ? <div className="ai-message-text">{msg.content}</div>
-            : <div className="ai-message-text">
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
-              </div>
+          <div className="ai-message-text-wrap">
+            <div className="ai-message-text">
+              {isUser
+                ? msg.content
+                : <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>}
+            </div>
+            {!msg.isStreaming && (
+              <CopyButton text={msg.content} />
+            )}
+          </div>
         )}
         {msg.isStreaming && !msg.content && (
           <div className="ai-typing">
             <span /><span /><span />
           </div>
         )}
+        {msg.isStreaming && msg.content && (
+          <span className="ai-stream-cursor" aria-hidden="true" />
+        )}
       </div>
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// SettingsPanel
+// ---------------------------------------------------------------------------
 
 function SettingsPanel({ settings, onSave, onClose }) {
   const [apiKey, setApiKey] = useState(settings.apiKey);
@@ -113,33 +172,39 @@ function SettingsPanel({ settings, onSave, onClose }) {
     <div className="ai-settings-backdrop" onClick={onClose}>
       <div className="ai-settings-panel" onClick={e => e.stopPropagation()}>
         <div className="ai-settings-header">
-          <h3>AI Settings</h3>
+          <div className="ai-settings-header-title">
+            <FaCog className="ai-settings-header-icon" />
+            <h3>AI Settings</h3>
+          </div>
           <button className="ai-settings-close" onClick={onClose}><FaTimes /></button>
         </div>
 
         <div className="ai-settings-body">
-          <label className="ai-settings-label">
-            OpenRouter API Key
+          <div className="ai-settings-field">
+            <label className="ai-settings-label">OpenRouter API Key</label>
             <div className="ai-settings-key-row">
               <input
                 type={showKey ? 'text' : 'password'}
                 className="ai-settings-input"
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
-                placeholder="sk-or-..."
+                placeholder="sk-or-v1-..."
+                spellCheck={false}
               />
               <button
                 className="ai-settings-eye"
                 onClick={() => setShowKey(v => !v)}
                 type="button"
+                title={showKey ? 'Hide key' : 'Show key'}
               >
                 {showKey ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
-          </label>
+            <p className="ai-settings-hint">Get a key at openrouter.ai/keys</p>
+          </div>
 
-          <label className="ai-settings-label">
-            Model
+          <div className="ai-settings-field">
+            <label className="ai-settings-label">Model</label>
             <select
               className="ai-settings-select"
               value={model}
@@ -149,17 +214,17 @@ function SettingsPanel({ settings, onSave, onClose }) {
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
-          </label>
+          </div>
 
-          <label className="ai-settings-label">
-            System Prompt
+          <div className="ai-settings-field">
+            <label className="ai-settings-label">System Prompt</label>
             <textarea
               className="ai-settings-textarea"
               value={systemPrompt}
               onChange={e => setSystemPrompt(e.target.value)}
-              rows={5}
+              rows={6}
             />
-          </label>
+          </div>
         </div>
 
         <div className="ai-settings-footer">
@@ -191,10 +256,18 @@ export default function AI() {
   const textareaRef = useRef(null);
   const abortRef = useRef(null);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+  }, [input]);
 
   const handleSaveSettings = (newSettings) => {
     setSettings(newSettings);
@@ -204,7 +277,13 @@ export default function AI() {
     setShowSettings(false);
   };
 
-  // Run one turn of the conversation (may loop for tool calls)
+  const handleNewChat = () => {
+    abortRef.current?.abort();
+    setMessages([]);
+    setInput('');
+    setIsLoading(false);
+  };
+
   const runConversation = useCallback(async (conversationMessages) => {
     if (!settings.apiKey) {
       setMessages(prev => [
@@ -218,7 +297,6 @@ export default function AI() {
       return;
     }
 
-    // Build API messages (strip UI-only fields)
     const apiMessages = [
       { role: 'system', content: settings.systemPrompt || DEFAULT_SYSTEM_PROMPT },
       ...conversationMessages.map(m => {
@@ -237,7 +315,6 @@ export default function AI() {
       }),
     ];
 
-    // Add a streaming assistant message placeholder
     const assistantMsgId = Date.now();
     setMessages(prev => [
       ...prev,
@@ -261,9 +338,7 @@ export default function AI() {
           accContent += chunk;
           setMessages(prev =>
             prev.map(m =>
-              m.id === assistantMsgId
-                ? { ...m, content: accContent }
-                : m
+              m.id === assistantMsgId ? { ...m, content: accContent } : m
             )
           );
         },
@@ -272,7 +347,6 @@ export default function AI() {
         },
       });
 
-      // Finalize the assistant message
       setMessages(prev =>
         prev.map(m =>
           m.id === assistantMsgId
@@ -281,11 +355,9 @@ export default function AI() {
         )
       );
 
-      // If there are tool calls, execute them and continue
       if (finalToolCalls.length > 0) {
         const toolResults = [];
 
-        // Execute each tool and collect results
         for (const tc of finalToolCalls) {
           let toolResult;
           try {
@@ -295,7 +367,6 @@ export default function AI() {
             toolResult = { error: err.message };
           }
 
-          // Attach result to the tool call for display
           setMessages(prev =>
             prev.map(m =>
               m.id === assistantMsgId
@@ -316,14 +387,9 @@ export default function AI() {
           });
         }
 
-        // Build updated conversation with tool results and recurse
         const updatedConversation = [
           ...conversationMessages,
-          {
-            role: 'assistant',
-            content: result.content || '',
-            toolCalls: finalToolCalls,
-          },
+          { role: 'assistant', content: result.content || '', toolCalls: finalToolCalls },
           ...toolResults,
         ];
 
@@ -344,8 +410,8 @@ export default function AI() {
     }
   }, [settings]);
 
-  const handleSend = useCallback(async () => {
-    const text = input.trim();
+  const handleSend = useCallback(async (textOverride) => {
+    const text = (textOverride ?? input).trim();
     if (!text || isLoading) return;
 
     setInput('');
@@ -371,16 +437,25 @@ export default function AI() {
   };
 
   const hasApiKey = Boolean(settings.apiKey);
+  const modelShort = settings.model.split('/').pop();
 
   return (
     <div className="ai-page">
       {/* Top bar */}
       <div className="ai-topbar">
-        <div className="ai-topbar-title">
-          <FaRobot className="ai-topbar-icon" />
-          <span>AI Assistant</span>
+        <div className="ai-topbar-left">
+          <div className="ai-topbar-title">
+            <div className="ai-topbar-avatar">
+              <FaRobot />
+            </div>
+            <div className="ai-topbar-title-text">
+              <span className="ai-topbar-name">AI Assistant</span>
+              <span className="ai-topbar-model">{modelShort}</span>
+            </div>
+          </div>
         </div>
-        <div className="ai-topbar-controls">
+
+        <div className="ai-topbar-right">
           <select
             className="ai-model-select"
             value={settings.model}
@@ -389,18 +464,31 @@ export default function AI() {
               setSettings(s => ({ ...s, model: m }));
               localStorage.setItem('ai-model', m);
             }}
+            title="Select model"
           >
             {MODELS.map(m => (
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
+
+          {messages.length > 0 && (
+            <button
+              className="ai-topbar-btn"
+              onClick={handleNewChat}
+              title="New chat"
+            >
+              <FaPlus />
+              <span>New</span>
+            </button>
+          )}
+
           <button
-            className={`ai-settings-btn ${!hasApiKey ? 'ai-settings-btn--warn' : ''}`}
+            className={`ai-topbar-btn ai-settings-btn ${!hasApiKey ? 'ai-settings-btn--warn' : ''}`}
             onClick={() => setShowSettings(true)}
             title="Settings"
           >
             <FaCog />
-            {!hasApiKey && <span className="ai-settings-badge">!</span>}
+            {!hasApiKey && <span className="ai-settings-badge" />}
           </button>
         </div>
       </div>
@@ -409,49 +497,74 @@ export default function AI() {
       <div className="ai-chat">
         {messages.length === 0 && (
           <div className="ai-empty">
-            <FaRobot className="ai-empty-icon" />
+            <div className="ai-empty-glow" />
+            <div className="ai-empty-icon-wrap">
+              <FaRobot className="ai-empty-icon" />
+            </div>
             <p className="ai-empty-title">PVE Portal AI</p>
             <p className="ai-empty-sub">
               {hasApiKey
-                ? 'Ask me anything about your infrastructure — VMs, containers, Kubernetes, networking, and more.'
-                : 'Click the gear icon to configure your OpenRouter API key to get started.'}
+                ? 'Ask about your infrastructure or choose a suggestion below.'
+                : 'Click the gear icon to configure your OpenRouter API key.'}
             </p>
+            {hasApiKey && (
+              <div className="ai-suggestions">
+                {SUGGESTED_PROMPTS.map((p, i) => (
+                  <button
+                    key={i}
+                    className="ai-suggestion-chip"
+                    onClick={() => handleSend(p.text)}
+                  >
+                    <span className="ai-suggestion-icon">{p.icon}</span>
+                    <span>{p.text}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
+
         {messages.map((msg, i) => (
-          <Message key={i} msg={msg} />
+          <Message
+            key={i}
+            msg={msg}
+            isLatest={i === messages.length - 1}
+          />
         ))}
         <div ref={chatEndRef} />
       </div>
 
       {/* Input area */}
       <div className="ai-input-area">
-        <div className="ai-input-row">
+        <div className={`ai-input-row ${isLoading ? 'ai-input-row--loading' : ''}`}>
           <textarea
             ref={textareaRef}
             className="ai-textarea"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about your infrastructure… (Enter to send, Shift+Enter for newline)"
+            placeholder="Ask about your infrastructure…"
             rows={1}
             disabled={isLoading}
           />
-          {isLoading ? (
-            <button className="ai-send-btn ai-send-btn--stop" onClick={handleStop} title="Stop">
-              <span className="ai-stop-icon" />
-            </button>
-          ) : (
-            <button
-              className="ai-send-btn"
-              onClick={handleSend}
-              disabled={!input.trim()}
-              title="Send"
-            >
-              <FaPaperPlane />
-            </button>
-          )}
+          <div className="ai-input-actions">
+            {isLoading ? (
+              <button className="ai-send-btn ai-send-btn--stop" onClick={handleStop} title="Stop generating">
+                <span className="ai-stop-icon" />
+              </button>
+            ) : (
+              <button
+                className="ai-send-btn"
+                onClick={() => handleSend()}
+                disabled={!input.trim()}
+                title="Send (Enter)"
+              >
+                <FaPaperPlane />
+              </button>
+            )}
+          </div>
         </div>
+        <p className="ai-input-hint">Enter to send · Shift+Enter for newline</p>
       </div>
 
       {/* Settings panel */}
