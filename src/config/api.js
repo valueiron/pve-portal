@@ -78,6 +78,14 @@ export const API_ENDPOINTS = {
   DOCKER_CONTAINER_EXEC_WEBSOCKET: (sessionId) =>
     `${WS_BASE_URL}/ws/docker-exec?sessionId=${encodeURIComponent(sessionId)}`,
 
+  // Multi-host / agent endpoints
+  DOCKER_HOSTS: `${API_BASE_URL}/api/docker/hosts`,
+  DOCKER_AGENTS: `${API_BASE_URL}/api/docker/agents`,
+  DOCKER_AGENT: (id) => `${API_BASE_URL}/api/docker/agents/${id}`,
+  DOCKER_AGENT_WS: `${WS_BASE_URL}/ws/docker-agent`,
+  DOCKER_AGENT_EXEC_WEBSOCKET: (agentId, sessionId) =>
+    `${WS_BASE_URL}/ws/agent-exec/${agentId}?sessionId=${encodeURIComponent(sessionId)}`,
+
   // Kubernetes endpoints
   K8S_PODS: `${API_BASE_URL}/api/k8s/pods`,
   K8S_POD: (ns, name) => `${API_BASE_URL}/api/k8s/pods/${ns}/${name}`,
