@@ -10,7 +10,8 @@ import {
   FaChevronRight,
   FaTimes,
   FaSitemap,
-  FaRobot
+  FaRobot,
+  FaTicketAlt
 } from "react-icons/fa";
 import { SiKubernetes, SiDocker } from "react-icons/si";
 import "./Nav.css";
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
     { name: "Docker", icon: SiDocker, path: "/docker" },
     { name: "Labs", icon: FaFlask, path: "/labs" },
     { name: "VyOS", icon: FaSitemap, path: "/vyos" },
+    { name: "Tickets", icon: FaTicketAlt, path: "/tickets" },
     { name: "AI", icon: FaRobot, path: "/ai" },
 ];
 

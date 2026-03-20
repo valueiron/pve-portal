@@ -12,6 +12,7 @@ import Labs from './pages/Labs'
 import LabView from './pages/LabView'
 import VncConsole from './pages/VncConsole'
 import VyOS from './pages/VyOS'
+import Tickets from './pages/Tickets'
 import AI from './pages/AI'
 
 function App() {
@@ -71,6 +72,7 @@ function App() {
             <Route path="/docker" element={<Docker />} />
             <Route path="/labs" element={<Labs />} />
             <Route path="/vyos" element={<VyOS />} />
+            <Route path="/tickets" element={<Tickets />} />
           </Routes>
         </div>
       </main>
