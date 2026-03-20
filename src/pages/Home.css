@@ -1,3 +1,466 @@
+/* ============================================================
+   Keyframes
+   ============================================================ */
+@keyframes dot-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.2); opacity: 0.85; box-shadow: 0 0 10px currentColor; }
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scan-sweep {
+  0%   { transform: translateX(-100%) skewX(-12deg); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateX(400%) skewX(-12deg); opacity: 0; }
+}
+
+/* ============================================================
+   Status dots — 10px, vivid glow
+   ============================================================ */
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.status-dot.online {
+  background: var(--green);
+  color: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: dot-pulse 2.5s ease-in-out infinite;
+}
+
+.status-dot.degraded {
+  background: var(--amber);
+  color: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+  animation: dot-pulse 1s ease-in-out infinite;
+}
+
+.status-dot.offline {
+  background: var(--red);
+  box-shadow: 0 0 4px var(--red);
+}
+
+.status-dot.loading {
+  background: var(--text-tertiary);
+  color: var(--text-tertiary);
+  animation: dot-pulse 0.8s ease-in-out infinite;
+}
+
+/* ============================================================
+   Header
+   ============================================================ */
+.dash-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.dash-header-left { flex: 1; }
+
+.dash-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding-top: 0.375rem;
+  flex-shrink: 0;
+}
+
+.dash-last-updated {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-refresh-ring {
+  opacity: 0.8;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+.dash-refresh-ring:hover { opacity: 1; }
+
+/* Scan-line sweep on the title — single pass on load */
+.dash-title {
+  position: relative;
+  overflow: hidden;
+}
+
+.dash-title::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 20%, transparent),
+    transparent
+  );
+  animation: scan-sweep 1.8s var(--ease-out) 0.3s both;
+  pointer-events: none;
+}
+
+/* ============================================================
+   Health bar
+   ============================================================ */
+.dash-health-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 0.875rem 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: inset 0 1px 0 var(--border-subtle);
+}
+
+.dash-health-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.dash-health-text strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.dash-health-warn {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--amber);
+  background: var(--amber-muted);
+  border: 1px solid color-mix(in srgb, var(--amber) 25%, transparent);
+  padding: 0.175rem 0.625rem;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.dash-health-pills {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.dash-health-pill {
+  height: 8px;
+  width: 28px;
+  border-radius: 4px;
+  transition: background-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.dash-health-pill.online {
+  background: var(--green);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--green) 60%, transparent);
+}
+
+.dash-health-pill.degraded {
+  background: var(--amber);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--amber) 60%, transparent);
+}
+
+.dash-health-pill.offline {
+  background: var(--red);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--red) 40%, transparent);
+}
+
+.dash-health-pill.loading {
+  background: var(--bg-surface-3);
+}
+
+/* ============================================================
+   KPI row — bold, colored top accent
+   ============================================================ */
+.dash-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.dash-kpi-tile {
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-subtle);
+  border-top: 3px solid var(--tile-color, var(--border-strong));
+  border-radius: var(--radius-lg);
+  padding: 1.125rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+  transition:
+    box-shadow var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out);
+}
+
+.dash-kpi-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tile-color, var(--accent)) 4%, transparent) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.dash-kpi-tile:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--tile-color, var(--accent)) 22%, transparent),
+    var(--shadow-md);
+}
+
+.dash-kpi-value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 0.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-kpi-number {
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-kpi-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  line-height: 1.4;
+  margin-bottom: 0.2rem;
+}
+
+.dash-kpi-sub {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-kpi-sub.good { color: var(--green); }
+.dash-kpi-sub.warn { color: var(--amber); }
+
+.dash-kpi-skeleton {
+  height: 2rem;
+  width: 3.5rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface-2) 25%,
+    var(--bg-surface-3) 50%,
+    var(--bg-surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  margin-bottom: 0.3rem;
+}
+
+/* ============================================================
+   Insights row — visualization cards
+   ============================================================ */
+.dash-insights-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.dash-insight-card {
+  background: linear-gradient(135deg, var(--bg-surface-1) 0%, var(--bg-elevated) 100%);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  transition: box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.dash-insight-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.dash-insight-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.dash-insight-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.dash-insight-icon {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.dash-insight-body {
+  display: flex;
+  align-items: center;
+  gap: 1.125rem;
+}
+
+.dash-insight-stats {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.dash-insight-stats--grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.dash-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+.dash-stat-row span:not(.dash-stat-dot) {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-stat-row strong {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.dash-stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Segmented bar */
+.dash-segment-bar {
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--bg-surface-3);
+  display: flex;
+  width: 100%;
+}
+
+.dash-segment-fill {
+  height: 100%;
+  transition: width 0.9s var(--ease-out);
+}
+
+/* ============================================================
+   Service grid
+   ============================================================ */
+.dash-service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.dash-service-grid.is-loaded .dash-service-card {
+  animation: card-enter var(--duration-normal) var(--ease-out) both;
+  animation-delay: calc(var(--i) * 50ms);
+}
+
+.dash-service-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.dash-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.dash-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+  gap: 0.5rem;
+}
+
+.dash-card-title {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-card-desc {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+  flex: 1;
+}
+
+.dash-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 0.25rem;
+}
+
+.dash-card-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-default);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-normal) var(--ease-out);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   home-card base + enhanced hover glow (preserved + improved)
+   ============================================================ */
 .home-header {
   margin-bottom: 2rem;
 }
@@ -18,7 +481,11 @@
   padding: 1.25rem 1.5rem;
   text-decoration: none;
   color: inherit;
-  transition: all var(--duration-normal) var(--ease-out);
+  transition:
+    border-color var(--duration-normal) var(--ease-out),
+    background-color var(--duration-normal) var(--ease-out),
+    box-shadow var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out);
   position: relative;
   overflow: hidden;
 }
@@ -36,9 +503,11 @@
 }
 
 .home-card:hover {
-  border-color: var(--border-default);
+  border-color: color-mix(in srgb, var(--card-accent) 35%, var(--border-default));
   background-color: var(--bg-elevated);
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    0 0 24px color-mix(in srgb, var(--card-accent) 16%, transparent),
+    var(--shadow-md);
   transform: translateY(-2px);
 }
 
@@ -54,8 +523,15 @@
 
 .home-card:hover .home-card-icon {
   color: var(--card-accent);
-  background-color: color-mix(in srgb, var(--card-accent) 10%, transparent);
-  border-color: color-mix(in srgb, var(--card-accent) 20%, transparent);
+  background-color: color-mix(in srgb, var(--card-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--card-accent) 25%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--card-accent) 20%, transparent);
+}
+
+.home-card:hover .dash-card-badge {
+  color: var(--card-accent);
+  border-color: color-mix(in srgb, var(--card-accent) 30%, transparent);
+  background: color-mix(in srgb, var(--card-accent) 8%, var(--bg-surface-2));
 }
 
 .home-card-icon {
@@ -70,7 +546,11 @@
   color: var(--text-secondary);
   font-size: 1.125rem;
   flex-shrink: 0;
-  transition: all var(--duration-normal) var(--ease-out);
+  transition:
+    color var(--duration-normal) var(--ease-out),
+    background-color var(--duration-normal) var(--ease-out),
+    border-color var(--duration-normal) var(--ease-out),
+    box-shadow var(--duration-normal) var(--ease-out);
 }
 
 .home-card-body {
@@ -97,8 +577,30 @@
   color: var(--text-tertiary);
   opacity: 0;
   transform: translateX(-4px);
-  transition: all var(--duration-normal) var(--ease-out);
+  transition:
+    opacity var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out),
+    color var(--duration-normal) var(--ease-out);
   flex-shrink: 0;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 1200px) {
+  .dash-kpi-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .dash-service-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dash-insights-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -109,5 +611,25 @@
   .home-card-arrow {
     opacity: 0.5;
     transform: translateX(0);
+  }
+
+  .dash-header {
+    flex-direction: column;
+  }
+
+  .dash-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dash-service-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-health-pills {
+    display: none;
+  }
+
+  .dash-insights-row {
+    grid-template-columns: 1fr;
   }
 }
