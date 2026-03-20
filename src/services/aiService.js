@@ -7,7 +7,7 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 export const DEFAULT_SYSTEM_PROMPT =
   'You are an AI assistant embedded in PVE Portal, an infrastructure management platform. ' +
   'You have access to tools to manage virtual machines, Docker containers, Kubernetes workloads, ' +
-  'VyOS networking, DNS, labs, storage, and networking resources. ' +
+  'VyOS networking, DNS, labs, storage, networking resources, tickets, and Kanban boards. ' +
   'Always confirm destructive actions before executing them. ' +
   'Present data in clean tables or lists when appropriate.';
 

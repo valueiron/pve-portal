@@ -153,6 +153,17 @@ export const API_ENDPOINTS = {
   ROUTE:      (id) => `${API_BASE_URL}/api/routes/${id}`,
   AUTH_ME:       `${API_BASE_URL}/api/auth/me`,
 
+  // Tickets endpoints
+  TICKETS_BOARDS: `${API_BASE_URL}/api/tickets/boards`,
+  TICKETS_BOARD: (id) => `${API_BASE_URL}/api/tickets/boards/${id}`,
+  TICKETS_COLUMNS: (boardId) => `${API_BASE_URL}/api/tickets/boards/${boardId}/columns`,
+  TICKETS_COLUMN: (boardId, colId) => `${API_BASE_URL}/api/tickets/boards/${boardId}/columns/${colId}`,
+  TICKETS_COLUMNS_REORDER: (boardId) => `${API_BASE_URL}/api/tickets/boards/${boardId}/columns/reorder`,
+  TICKETS_LIST: (boardId) => `${API_BASE_URL}/api/tickets/boards/${boardId}/tickets`,
+  TICKETS_TICKET: (boardId, tickId) => `${API_BASE_URL}/api/tickets/boards/${boardId}/tickets/${tickId}`,
+  TICKETS_MOVE: (boardId, tickId) => `${API_BASE_URL}/api/tickets/boards/${boardId}/tickets/${tickId}/move`,
+  TICKETS_WS: `${WS_BASE_URL}/ws/tickets`,
+
   // Labs endpoints
   LABS_REPOS: `${API_BASE_URL}/api/labs/repos`,
   LABS_REPO: (id) => `${API_BASE_URL}/api/labs/repos/${id}`,
